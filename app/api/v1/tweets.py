@@ -15,6 +15,7 @@ from app.db.models import Tweet, User, Keyword, TweetKeyword
 from app.schemas.tweet import TweetResponse, TweetFilterParams, KeywordCreate, KeywordResponse
 from app.core.security import get_current_user
 from app.db.models import AppUser
+from app.services.processor.content_filter import ContentFilter
 
 router = APIRouter(prefix="/tweets", tags=["tweets"])
 
@@ -430,10 +431,6 @@ async def delete_keyword(
 
     return {"message": "کلیدواژه با موفقیت غیرفعال شد"}
 
-
-from app.services.processor.content_filter import ContentFilter
-
-# اضافه کردن این اندپوینت به فایل app/api/v1/tweets.py
 
 @router.post("/keywords/extract", response_model=List[str])
 async def extract_keywords_from_text(
