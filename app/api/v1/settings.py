@@ -178,3 +178,114 @@ async def get_api_usage(
         },
         period_days=days
     )
+
+
+@router.get("/dashboard", response_model=Dict[str, Any])
+async def get_dashboard_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: AppUser = Depends(get_current_user)
+):
+    """
+    دریافت آمار اصلی برای داشبورد.
+    
+    Args:
+        db (AsyncSession): نشست دیتابیس
+        current_user (AppUser): کاربر فعلی
+    
+    Returns:
+        Dict[str, Any]: آمار داشبورد
+    """
+    # تاریخ امروز
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    yesterday = today - timedelta(days=1)
+    last_week = today - timedelta(days=7)
+    
+    # آمار توییت‌ها
+    tweet_counts = {}
+    
+    # تعداد کل توییت‌ها
+    total_tweets_stmt = select(func.count()).select_from(Tweet)
+    result = await db.execute(total_tweets_stmt)
+    tweet_counts["total"] = result.scalar() or 0
+    
+    # توییت‌های امروز
+    today_tweets_stmt = select(func.count()).where(
+        Tweet.created_at_internal >= today
+    ).select_from(Tweet)
+    result = await db.execute(today_tweets_stmt)
+    tweet_counts["today"] = result.scalar() or 0
+    
+    # توییت‌های دیروز
+    yesterday_tweets_stmt = select(func.count()).where(
+        and_(
+            Tweet.created_at_internal >= yesterday,
+            Tweet.created_at_internal < today
+        )
+    ).select_from(Tweet)
+    result = await db.execute(yesterday_tweets_stmt)
+    tweet_counts["yesterday"] = result.scalar() or 0
+    
+    # توییت‌های هفته اخیر
+    week_tweets_stmt = select(func.count()).where(
+        Tweet.created_at_internal >= last_week
+    ).select_from(Tweet)
+    result = await db.execute(week_tweets_stmt)
+    tweet_counts["last_week"] = result.scalar() or 0
+    
+    # آمار احساسات توییت‌ها
+    sentiment_stats = {}
+    
+    sentiment_stmt = select(
+        Tweet.sentiment_label,
+        func.count().label("count")
+    ).where(
+        Tweet.sentiment_label != None
+    ).group_by(
+        Tweet.sentiment_label
+    )
+    
+    result = await db.execute(sentiment_stmt)
+    sentiment_counts = {row[0]: row[1] for row in result.fetchall()}
+    
+    total_sentiment_count = sum(sentiment_counts.values()) or 1  # جلوگیری از تقسیم بر صفر
+    
+    sentiment_stats = {
+        "counts": sentiment_counts,
+        "distribution": {
+            label: count / total_sentiment_count 
+            for label, count in sentiment_counts.items()
+        }
+    }
+    
+    # آمار هشدارها
+    alert_counts = {}
+    
+    # تعداد کل هشدارها
+    total_alerts_stmt = select(func.count()).select_from(Alert)
+    result = await db.execute(total_alerts_stmt)
+    alert_counts["total"] = result.scalar() or 0
+    
+    # هشدارهای خوانده نشده
+    unread_alerts_stmt = select(func.count()).where(
+        Alert.is_read == False
+    ).select_from(Alert)
+    result = await db.execute(unread_alerts_stmt)
+    alert_counts["unread"] = result.scalar() or 0
+    
+    # هشدارهای امروز
+    today_alerts_stmt = select(func.count()).where(
+        Alert.created_at >= today
+    ).select_from(Alert)
+    result = await db.execute(today_alerts_stmt)
+    alert_counts["today"] = result.scalar() or 0
+    
+    # آمار API
+    api_usage = await get_api_usage(days=7, db=db, current_user=current_user)
+    
+    return {
+        "tweet_counts": tweet_counts,
+        "sentiment_stats": sentiment_stats,
+        "alert_counts": alert_counts,
+        "api_usage": api_usage,
+        "generated_at": datetime.now().isoformat()
+    }
