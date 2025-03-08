@@ -841,5 +841,7 @@ async def get_tweets(
 - [مستندات TwitterAPI](twitter-api-optimized.md) - راهنمای استفاده از TwitterAPI.io
 - [مستندات Anthropic API](anthropic-api-reference.md) - راهنمای استفاده از Claude API
 - [راهنمای توسعه ماژول تحلیل](analyzer-guide.md)
+- [راهنما و معرفی پروژه   ](rasad.md)
+
 
 
