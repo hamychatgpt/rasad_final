@@ -3,36 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سیستم رصد</title>
+    <title>رصد | سیستم هوشمند پایش توییتر</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        @font-face {
-            font-family: 'Vazir';
-            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Regular.woff2') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        body {
-            font-family: 'Vazir', sans-serif;
-        }
-        .navbar-brand {
-            font-weight: bold;
-        }
-        .alert-card {
-            transition: all 0.3s;
-        }
-        .alert-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
+    <!-- ناوبری -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <i class="bi bi-radar"></i> سیستم رصد
+                <i class="bi bi-radar"></i> سامانه رصد
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -40,21 +22,37 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#" id="dashboardLink">داشبورد</a>
+                        <a class="nav-link active" href="#" id="dashboardLink">
+                            <i class="bi bi-speedometer2"></i> داشبورد
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="tweetsLink">توییت‌ها</a>
+                        <a class="nav-link" href="#" id="tweetsLink">
+                            <i class="bi bi-chat-dots"></i> توییت‌ها
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="alertsLink">هشدارها</a>
+                        <a class="nav-link" href="#" id="alertsLink">
+                            <i class="bi bi-exclamation-triangle"></i> هشدارها
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="settingsLink">تنظیمات</a>
+                        <a class="nav-link" href="#" id="settingsLink">
+                            <i class="bi bi-gear"></i> تنظیمات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="servicesLink">
+                            <i class="bi bi-hdd-stack"></i> سرویس‌ها
+                        </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="loginLink">ورود</a>
+                        <a class="nav-link" href="#" id="userInfoLink">
+                            <i class="bi bi-person-circle"></i>
+                            <span id="userDisplayName">ورود</span>
+                        </a>
                     </li>
                 </ul>
             </div>
@@ -62,12 +60,16 @@
     </nav>
 
     <div class="container mt-4" id="mainContent">
+        <!-- فرم ورود -->
         <div id="loginForm" style="display: none;">
             <div class="row justify-content-center">
                 <div class="col-md-6">
                     <div class="card">
-                        <div class="card-header">ورود به سیستم</div>
+                        <div class="card-header">
+                            <i class="bi bi-key"></i> ورود به سیستم
+                        </div>
                         <div class="card-body">
+                            <div id="loginError" class="alert alert-danger" style="display: none;"></div>
                             <form id="authForm">
                                 <div class="mb-3">
                                     <label for="username" class="form-label">نام کاربری</label>
@@ -77,7 +79,11 @@
                                     <label for="password" class="form-label">رمز عبور</label>
                                     <input type="password" class="form-control" id="password" required>
                                 </div>
-                                <button type="submit" class="btn btn-primary">ورود</button>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-box-arrow-in-right"></i> ورود
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -85,66 +91,134 @@
             </div>
         </div>
 
+        <!-- داشبورد -->
         <div id="dashboardContent">
-            <h2>داشبورد</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-speedometer2"></i> داشبورد</h2>
+                <button class="btn btn-sm btn-outline-primary" id="refreshDashboard">
+                    <i class="bi bi-arrow-clockwise"></i> بروزرسانی
+                </button>
+            </div>
+
+            <!-- نمایش آمار -->
             <div class="row" id="dashboardStats">
-                <div class="col-md-3">
-                    <div class="card text-bg-primary mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">توییت‌های امروز</h5>
-                            <p class="card-text fs-1">0</p>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card bg-primary-gradient">
+                        <div class="stat-value" id="totalTweetsValue">0</div>
+                        <div class="stat-label">توییت‌های امروز</div>
+                        <div class="stat-icon">
+                            <i class="bi bi-chat-dots"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card text-bg-success mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">احساسات مثبت</h5>
-                            <p class="card-text fs-1">0%</p>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card bg-success-gradient">
+                        <div class="stat-value" id="positiveSentimentValue">0%</div>
+                        <div class="stat-label">احساسات مثبت</div>
+                        <div class="stat-icon">
+                            <i class="bi bi-emoji-smile"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card text-bg-danger mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">احساسات منفی</h5>
-                            <p class="card-text fs-1">0%</p>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card bg-danger-gradient">
+                        <div class="stat-value" id="negativeSentimentValue">0%</div>
+                        <div class="stat-label">احساسات منفی</div>
+                        <div class="stat-icon">
+                            <i class="bi bi-emoji-frown"></i>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card text-bg-warning mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title">هشدارهای فعال</h5>
-                            <p class="card-text fs-1">0</p>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="stat-card bg-warning-gradient">
+                        <div class="stat-value" id="activeAlertsValue">0</div>
+                        <div class="stat-label">هشدارهای فعال</div>
+                        <div class="stat-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="row mt-4">
+                <!-- آخرین هشدارها -->
                 <div class="col-md-6">
-                    <div class="card mb-3">
-                        <div class="card-header">آخرین هشدارها</div>
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bell"></i> آخرین هشدارها</span>
+                            <a href="#" id="viewAllAlerts" class="btn btn-sm btn-outline-primary">نمایش همه</a>
+                        </div>
                         <div class="card-body" id="latestAlerts">
-                            <p class="text-center text-muted">هشداری یافت نشد</p>
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">در حال بارگذاری...</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                <!-- موضوعات برتر -->
                 <div class="col-md-6">
-                    <div class="card mb-3">
-                        <div class="card-header">موضوعات برتر</div>
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-hash"></i> موضوعات برتر</span>
+                            <button class="btn btn-sm btn-outline-primary" id="viewTopTopics">نمایش همه</button>
+                        </div>
                         <div class="card-body" id="topTopics">
-                            <p class="text-center text-muted">موضوعی یافت نشد</p>
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">در حال بارگذاری...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- کلیدواژه‌های فعال -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-key"></i> کلیدواژه‌های فعال</span>
+                            <button class="btn btn-sm btn-outline-primary" id="manageKeywords">مدیریت کلیدواژه‌ها</button>
+                        </div>
+                        <div class="card-body" id="activeKeywords">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">در حال بارگذاری...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- وضعیت سرویس‌ها -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-hdd-stack"></i> وضعیت سرویس‌ها</span>
+                            <button class="btn btn-sm btn-outline-primary" id="manageServices">مدیریت سرویس‌ها</button>
+                        </div>
+                        <div class="card-body" id="servicesStatus">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">در حال بارگذاری...</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- توییت‌ها -->
         <div id="tweetsContent" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2>توییت‌ها</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-chat-dots"></i> توییت‌ها</h2>
                 <div>
                     <button class="btn btn-primary" id="refreshTweets">
                         <i class="bi bi-arrow-clockwise"></i> بروزرسانی
@@ -152,18 +226,20 @@
                 </div>
             </div>
 
-            <div class="card mb-3">
-                <div class="card-header">جستجو و فیلتر</div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-search"></i> جستجو و فیلتر
+                </div>
                 <div class="card-body">
                     <form id="tweetFilterForm">
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="searchQuery" class="form-label">جستجو</label>
-                                    <input type="text" class="form-control" id="searchQuery">
+                                    <input type="text" class="form-control" id="searchQuery" placeholder="متن جستجو...">
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="sentimentFilter" class="form-label">احساسات</label>
                                     <select class="form-select" id="sentimentFilter">
@@ -175,9 +251,17 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
-                                    <label for="importanceFilter" class="form-label">حداقل امتیاز اهمیت</label>
+                                    <label for="keywordFilter" class="form-label">کلیدواژه</label>
+                                    <select class="form-select" id="keywordFilter">
+                                        <option value="">همه</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label for="importanceFilter" class="form-label">حداقل اهمیت</label>
                                     <input type="number" class="form-control" id="importanceFilter" min="0" max="1" step="0.1" value="0">
                                 </div>
                             </div>
@@ -192,37 +276,26 @@
             </div>
 
             <div class="card">
-                <div class="card-header">نتایج</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-list"></i> نتایج جستجو</span>
+                    <span id="tweetCount" class="badge bg-primary">0</span>
+                </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>محتوا</th>
-                                    <th>کاربر</th>
-                                    <th>احساسات</th>
-                                    <th>اهمیت</th>
-                                    <th>تاریخ</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tweetsList">
-                                <tr>
-                                    <td colspan="6" class="text-center">درحال بارگیری...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div id="tweetsList">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">در حال بارگذاری...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="card-footer">
                     <nav>
-                        <ul class="pagination justify-content-center">
+                        <ul class="pagination justify-content-center" id="tweetPagination">
                             <li class="page-item disabled">
-                                <a class="page-link" href="#">قبلی</a>
+                                <a class="page-link" href="#" tabindex="-1" aria-disabled="true">قبلی</a>
                             </li>
-                            <li class="page-item active">
-                                <a class="page-link" href="#">1</a>
-                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
                             <li class="page-item disabled">
                                 <a class="page-link" href="#">بعدی</a>
                             </li>
@@ -232,9 +305,10 @@
             </div>
         </div>
 
+        <!-- هشدارها -->
         <div id="alertsContent" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2>هشدارها</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-exclamation-triangle"></i> هشدارها</h2>
                 <div>
                     <button class="btn btn-primary" id="refreshAlerts">
                         <i class="bi bi-arrow-clockwise"></i> بروزرسانی
@@ -242,8 +316,10 @@
                 </div>
             </div>
 
-            <div class="card mb-3">
-                <div class="card-header">فیلتر هشدارها</div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-filter"></i> فیلتر هشدارها
+                </div>
                 <div class="card-body">
                     <form id="alertFilterForm">
                         <div class="row">
@@ -288,20 +364,27 @@
                 </div>
             </div>
 
-            <div class="row" id="alertsList">
-                <div class="col-12">
-                    <p class="text-center text-muted">درحال بارگیری هشدارها...</p>
+            <div id="alertsList">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">در حال بارگذاری...</span>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- تنظیمات -->
         <div id="settingsContent" style="display: none;">
-            <h2>تنظیمات</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-gear"></i> تنظیمات</h2>
+            </div>
 
-            <div class="card mb-3">
-                <div class="card-header">کلیدواژه‌ها</div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-key"></i> کلیدواژه‌ها
+                </div>
                 <div class="card-body">
-                    <form id="addKeywordForm">
+                    <form id="addKeywordForm" class="mb-4">
                         <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
@@ -309,29 +392,62 @@
                                     <input type="text" class="form-control" id="keywordText" required>
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="keywordPriority" class="form-label">اولویت</label>
                                     <input type="number" class="form-control" id="keywordPriority" min="1" max="10" value="1">
                                 </div>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="mb-3">
                                     <label for="keywordDescription" class="form-label">توضیحات</label>
                                     <input type="text" class="form-control" id="keywordDescription">
                                 </div>
                             </div>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus"></i> افزودن کلیدواژه
-                            </button>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="mb-3 w-100">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-plus"></i> افزودن
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
 
-                    <hr>
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>استخراج خودکار کلیدواژه</span>
+                                <button class="btn btn-sm btn-outline-primary" id="keywordExtractorToggle">
+                                    نمایش ابزار استخراج
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="keywordExtractorPanel" style="display: none;">
+                            <div class="mb-3">
+                                <label for="extractorText" class="form-label">متن برای استخراج کلیدواژه</label>
+                                <textarea class="form-control" id="extractorText" rows="5" placeholder="متن خود را وارد کنید..."></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="maxKeywords" class="form-label">حداکثر تعداد کلیدواژه</label>
+                                <input type="number" class="form-control" id="maxKeywords" min="1" max="20" value="10">
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-primary" id="extractKeywords">
+                                    <i class="bi bi-lightbulb"></i> استخراج کلیدواژه‌ها
+                                </button>
+                                <button class="btn btn-outline-success" id="addExtractedKeywords" style="display: none;">
+                                    <i class="bi bi-plus-circle"></i> افزودن موارد انتخاب شده
+                                </button>
+                            </div>
+                            <div class="mt-3" id="extractedKeywordsContainer" style="display: none;">
+                                <h5>کلیدواژه‌های استخراج شده:</h5>
+                                <div id="extractedKeywords" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div class="table-responsive mt-3">
+                    <div class="table-responsive mt-4">
                         <table class="table table-hover">
                             <thead>
                                 <tr>
@@ -344,7 +460,11 @@
                             </thead>
                             <tbody id="keywordsList">
                                 <tr>
-                                    <td colspan="5" class="text-center">درحال بارگیری...</td>
+                                    <td colspan="5" class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">در حال بارگذاری...</span>
+                                        </div>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -352,8 +472,10 @@
                 </div>
             </div>
 
-            <div class="card mb-3">
-                <div class="card-header">تنظیمات API</div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-globe"></i> تنظیمات API
+                </div>
                 <div class="card-body">
                     <form id="apiSettingsForm">
                         <div class="row">
@@ -374,18 +496,203 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-save"></i> ذخیره تنظیمات
-                            </button>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">آمار مصرف API</div>
+                                    <div class="card-body">
+                                        <div id="apiUsageStats">
+                                            <div class="text-center">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">در حال بارگذاری...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="d-grid w-100">
+                                    <button type="submit" class="btn btn-primary mb-3">
+                                        <i class="bi bi-save"></i> ذخیره تنظیمات
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+
+        <!-- سرویس‌ها -->
+        <div id="servicesContent" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-hdd-stack"></i> مدیریت سرویس‌ها</h2>
+                <div>
+                    <button class="btn btn-primary" id="refreshServices">
+                        <i class="bi bi-arrow-clockwise"></i> بروزرسانی
+                    </button>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">جمع‌آوری کننده</h5>
+                            <div class="my-3" id="collectorStatus">
+                                <span class="status-badge status-stopped">متوقف</span>
+                            </div>
+                            <div class="btn-group w-100">
+                                <button class="btn btn-success" id="startCollector">
+                                    <i class="bi bi-play-fill"></i> شروع
+                                </button>
+                                <button class="btn btn-danger" id="stopCollector">
+                                    <i class="bi bi-stop-fill"></i> توقف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">پردازشگر</h5>
+                            <div class="my-3" id="processorStatus">
+                                <span class="status-badge status-stopped">متوقف</span>
+                            </div>
+                            <div class="btn-group w-100">
+                                <button class="btn btn-success" id="startProcessor">
+                                    <i class="bi bi-play-fill"></i> شروع
+                                </button>
+                                <button class="btn btn-danger" id="stopProcessor">
+                                    <i class="bi bi-stop-fill"></i> توقف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">تحلیلگر</h5>
+                            <div class="my-3" id="analyzerStatus">
+                                <span class="status-badge status-stopped">متوقف</span>
+                            </div>
+                            <div class="btn-group w-100">
+                                <button class="btn btn-success" id="startAnalyzer">
+                                    <i class="bi bi-play-fill"></i> شروع
+                                </button>
+                                <button class="btn btn-danger" id="stopAnalyzer">
+                                    <i class="bi bi-stop-fill"></i> توقف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card mb-3">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">همه سرویس‌ها</h5>
+                            <div class="my-3">
+                                <span class="status-badge" id="allServicesStatus">-</span>
+                            </div>
+                            <div class="btn-group w-100">
+                                <button class="btn btn-success" id="startAllServices">
+                                    <i class="bi bi-play-fill"></i> شروع همه
+                                </button>
+                                <button class="btn btn-danger" id="stopAllServices">
+                                    <i class="bi bi-stop-fill"></i> توقف همه
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-info-circle"></i> اطلاعات سیستم
+                </div>
+                <div class="card-body" id="systemInfo">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">در حال بارگذاری...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-journal-text"></i> لاگ‌های سیستم</span>
+                    <div class="btn-group">
+                        <select class="form-select form-select-sm" id="logServiceSelector">
+                            <option value="all">همه سرویس‌ها</option>
+                            <option value="collector">جمع‌آوری کننده</option>
+                            <option value="processor">پردازشگر</option>
+                            <option value="analyzer">تحلیلگر</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary ms-2" id="refreshLogs">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <pre id="serviceLogs" class="p-3 bg-light" style="max-height: 400px; overflow: auto; direction: ltr; font-size: 12px;">در حال بارگذاری لاگ‌ها...</pre>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- فوتر -->
+    <footer class="mt-5 py-3 text-center text-muted">
+        <div class="container">
+            <p>سیستم هوشمند رصد &copy; ۱۴۰۲</p>
+        </div>
+    </footer>
+
+    <!-- مدال نمایش توییت -->
+    <div class="modal fade" id="tweetDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">جزئیات توییت</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="tweetDetailContent">
+                    <!-- محتوای توییت اینجا نمایش داده می‌شود -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="analyzeTweetBtn">تحلیل توییت</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مدال هشدار -->
+    <div class="modal fade" id="alertDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalTitle">جزئیات هشدار</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="alertDetailContent">
+                    <!-- محتوای هشدار اینجا نمایش داده می‌شود -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="markAsReadBtn">علامت‌گذاری به عنوان خوانده شده</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- اسکریپت‌ها -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

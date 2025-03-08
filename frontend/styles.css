@@ -1,0 +1,257 @@
+/* فونت‌ها */
+@font-face {
+    font-family: 'Vazir';
+    src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Vazir';
+    src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+}
+
+/* استایل‌های پایه */
+body {
+    font-family: 'Vazir', Tahoma, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.ltr {
+    direction: ltr;
+}
+
+.rtl {
+    direction: rtl;
+}
+
+/* هدر و ناوبری */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.navbar-brand i {
+    margin-left: 8px;
+}
+
+/* کارت‌ها و المان‌های رابط کاربری */
+.card {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    margin-bottom: 20px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,.1);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    font-weight: bold;
+}
+
+/* استایل آمار */
+.stat-card {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+}
+
+.stat-card .stat-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 48px;
+    opacity: 0.2;
+}
+
+.stat-card .stat-value {
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-label {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+/* رنگ‌های آمار */
+.bg-primary-gradient {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+}
+
+.bg-success-gradient {
+    background: linear-gradient(45deg, #1cc88a, #169a6b);
+}
+
+.bg-info-gradient {
+    background: linear-gradient(45deg, #36b9cc, #258391);
+}
+
+.bg-warning-gradient {
+    background: linear-gradient(45deg, #f6c23e, #dda20a);
+}
+
+.bg-danger-gradient {
+    background: linear-gradient(45deg, #e74a3b, #be2617);
+}
+
+/* هشدارها و موج‌ها */
+.alert-card {
+    border-right: 4px solid;
+    transition: all 0.3s;
+}
+
+.alert-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.alert-card.severity-high {
+    border-right-color: #e74a3b;
+}
+
+.alert-card.severity-medium {
+    border-right-color: #f6c23e;
+}
+
+.alert-card.severity-low {
+    border-right-color: #36b9cc;
+}
+
+/* نشانگرهای وضعیت */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-running {
+    background-color: #1cc88a;
+    color: white;
+}
+
+.status-stopped {
+    background-color: #e74a3b;
+    color: white;
+}
+
+.status-warning {
+    background-color: #f6c23e;
+    color: white;
+}
+
+/* لودر و انیمیشن‌ها */
+.loader {
+    border: 4px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 4px solid #3498db;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* توییت‌ها */
+.tweet-card {
+    border-right: none;
+    border-left: none;
+    border-top: none;
+    border-radius: 0;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.tweet-card:hover {
+    background-color: #f9f9f9;
+}
+
+.tweet-user {
+    font-weight: bold;
+}
+
+.tweet-date {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.tweet-content {
+    margin: 10px 0;
+}
+
+.sentiment-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    color: white;
+}
+
+.sentiment-positive { background-color: #1cc88a; }
+.sentiment-negative { background-color: #e74a3b; }
+.sentiment-neutral { background-color: #858796; }
+.sentiment-mixed { background-color: #f6c23e; }
+
+/* پنل‌های مدیریت */
+.management-tools {
+    margin-bottom: 20px;
+}
+
+.tool-card {
+    text-align: center;
+    padding: 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+.tool-card i {
+    font-size: 32px;
+    margin-bottom: 10px;
+    color: #4e73df;
+}
+
+.tool-card:hover {
+    background-color: #f8f9fc;
+}
+
+/* فرم‌ها */
+.form-control {
+    border-radius: 5px;
+}
+
+.btn {
+    border-radius: 5px;
+    padding: 8px 16px;
+}
+
+/* تنظیمات پاسخگویی */
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 15px;
+    }
+    
+    .stat-card .stat-value {
+        font-size: 24px;
+    }
+}
