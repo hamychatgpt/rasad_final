@@ -21,7 +21,7 @@ logging.basicConfig(
 logger = logging.getLogger("test_connections")
 
 # استفاده از ماژول‌های پروژه
-from app.db.session import get_db
+from app.db.session import get_session, close_db_engine
 from app.services.redis_service import RedisService
 from app.services.twitter.client import TwitterAPIClient
 from app.services.analyzer.claude_client import ClaudeClient
@@ -31,13 +31,14 @@ async def test_database_connection():
     """تست اتصال به دیتابیس"""
     logger.info("Testing database connection...")
     try:
-        db_session = await anext(get_db())
-        from sqlalchemy import text
-        result = await db_session.execute(text("SELECT 1"))
-        value = result.scalar()
-        assert value == 1
-        logger.info("✅ Database connection successful!")
-        return True
+        # استفاده از context manager برای مدیریت چرخه حیات نشست
+        async with get_session() as session:
+            from sqlalchemy import text
+            result = await session.execute(text("SELECT 1"))
+            value = result.scalar()
+            assert value == 1
+            logger.info("✅ Database connection successful!")
+            return True
     except Exception as e:
         logger.error(f"❌ Database connection failed: {e}")
         return False
@@ -132,27 +133,33 @@ async def main():
     """تابع اصلی"""
     logger.info("Starting connection tests...")
 
-    # تست همه اتصال‌ها
-    db_result = await test_database_connection()
-    redis_result = await test_redis_connection()
-    twitter_result = await test_twitter_api()
-    claude_result = await test_claude_api()
+    try:
+        # تست همه اتصال‌ها
+        db_result = await test_database_connection()
+        redis_result = await test_redis_connection()
+        twitter_result = await test_twitter_api()
+        claude_result = await test_claude_api()
 
-    # نتیجه کلی
-    all_passed = db_result and redis_result and twitter_result and claude_result
+        # نتیجه کلی
+        all_passed = db_result and redis_result and twitter_result and claude_result
 
-    if all_passed:
-        logger.info("🎉 All connections tests passed!")
-    else:
-        logger.warning("⚠️ Some connection tests failed!")
+        if all_passed:
+            logger.info("🎉 All connections tests passed!")
+        else:
+            logger.warning("⚠️ Some connection tests failed!")
 
-    # نمایش خلاصه
-    logger.info("Connection Tests Summary:")
-    logger.info(f"Database: {'✅ PASS' if db_result else '❌ FAIL'}")
-    logger.info(f"Redis: {'✅ PASS' if redis_result else '❌ FAIL'}")
-    logger.info(f"Twitter API: {'✅ PASS' if twitter_result else '❌ FAIL'}")
-    logger.info(f"Claude API: {'✅ PASS' if claude_result else '❌ FAIL'}")
+        # نمایش خلاصه
+        logger.info("Connection Tests Summary:")
+        logger.info(f"Database: {'✅ PASS' if db_result else '❌ FAIL'}")
+        logger.info(f"Redis: {'✅ PASS' if redis_result else '❌ FAIL'}")
+        logger.info(f"Twitter API: {'✅ PASS' if twitter_result else '❌ FAIL'}")
+        logger.info(f"Claude API: {'✅ PASS' if claude_result else '❌ FAIL'}")
+    finally:
+        # آزادسازی صریح منابع دیتابیس قبل از پایان برنامه
+        await close_db_engine()
+        logger.info("All database resources released.")
 
 
 if __name__ == "__main__":
+    # استفاده از asyncio.run برای مدیریت صحیح event loop
     asyncio.run(main())
