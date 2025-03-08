@@ -1,0 +1,50 @@
+# Virtual Environment
+env/
+venv/
+ENV/
+.env
+
+# کش پایتون
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# فایل‌های توزیع
+dist/
+build/
+*.egg-info/
+
+# فایل‌های محیط
+.env
+.venv
+.env.*
+
+# فایل‌های لاگ
+*.log
+
+# دیتابیس
+*.sqlite
+*.db
+
+# فایل‌های VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# فایل‌های مایگریشن alembic
+# alembic/versions/*.py
+
+# فایل‌های پوشه .idea (PyCharm)
+.idea/
+
+# فایل‌های mypy
+.mypy_cache/
+
+# دیگر
+.DS_Store
+node_modules/
+.env
+.env

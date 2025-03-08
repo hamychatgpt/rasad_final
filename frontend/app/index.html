@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم رصد</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        @font-face {
+            font-family: 'Vazir';
+            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body {
+            font-family: 'Vazir', sans-serif;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .alert-card {
+            transition: all 0.3s;
+        }
+        .alert-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-radar"></i> سیستم رصد
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="dashboardLink">داشبورد</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="tweetsLink">توییت‌ها</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="alertsLink">هشدارها</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="settingsLink">تنظیمات</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="loginLink">ورود</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4" id="mainContent">
+        <div id="loginForm" style="display: none;">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">ورود به سیستم</div>
+                        <div class="card-body">
+                            <form id="authForm">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">نام کاربری</label>
+                                    <input type="email" class="form-control" id="username" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">رمز عبور</label>
+                                    <input type="password" class="form-control" id="password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">ورود</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboardContent">
+            <h2>داشبورد</h2>
+            <div class="row" id="dashboardStats">
+                <div class="col-md-3">
+                    <div class="card text-bg-primary mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">توییت‌های امروز</h5>
+                            <p class="card-text fs-1">0</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-bg-success mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">احساسات مثبت</h5>
+                            <p class="card-text fs-1">0%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-bg-danger mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">احساسات منفی</h5>
+                            <p class="card-text fs-1">0%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-bg-warning mb-3">
+                        <div class="card-body">
+                            <h5 class="card-title">هشدارهای فعال</h5>
+                            <p class="card-text fs-1">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header">آخرین هشدارها</div>
+                        <div class="card-body" id="latestAlerts">
+                            <p class="text-center text-muted">هشداری یافت نشد</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header">موضوعات برتر</div>
+                        <div class="card-body" id="topTopics">
+                            <p class="text-center text-muted">موضوعی یافت نشد</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tweetsContent" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>توییت‌ها</h2>
+                <div>
+                    <button class="btn btn-primary" id="refreshTweets">
+                        <i class="bi bi-arrow-clockwise"></i> بروزرسانی
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">جستجو و فیلتر</div>
+                <div class="card-body">
+                    <form id="tweetFilterForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="searchQuery" class="form-label">جستجو</label>
+                                    <input type="text" class="form-control" id="searchQuery">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="sentimentFilter" class="form-label">احساسات</label>
+                                    <select class="form-select" id="sentimentFilter">
+                                        <option value="">همه</option>
+                                        <option value="positive">مثبت</option>
+                                        <option value="negative">منفی</option>
+                                        <option value="neutral">خنثی</option>
+                                        <option value="mixed">ترکیبی</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="importanceFilter" class="form-label">حداقل امتیاز اهمیت</label>
+                                    <input type="number" class="form-control" id="importanceFilter" min="0" max="1" step="0.1" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> جستجو
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">نتایج</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>محتوا</th>
+                                    <th>کاربر</th>
+                                    <th>احساسات</th>
+                                    <th>اهمیت</th>
+                                    <th>تاریخ</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tweetsList">
+                                <tr>
+                                    <td colspan="6" class="text-center">درحال بارگیری...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">قبلی</a>
+                            </li>
+                            <li class="page-item active">
+                                <a class="page-link" href="#">1</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">بعدی</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div id="alertsContent" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>هشدارها</h2>
+                <div>
+                    <button class="btn btn-primary" id="refreshAlerts">
+                        <i class="bi bi-arrow-clockwise"></i> بروزرسانی
+                    </button>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">فیلتر هشدارها</div>
+                <div class="card-body">
+                    <form id="alertFilterForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="alertType" class="form-label">نوع هشدار</label>
+                                    <select class="form-select" id="alertType">
+                                        <option value="">همه</option>
+                                        <option value="volume_wave">موج حجمی</option>
+                                        <option value="sentiment_shift">تغییر احساسات</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="alertSeverity" class="form-label">شدت هشدار</label>
+                                    <select class="form-select" id="alertSeverity">
+                                        <option value="">همه</option>
+                                        <option value="high">زیاد</option>
+                                        <option value="medium">متوسط</option>
+                                        <option value="low">کم</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="isReadFilter" class="form-label">وضعیت</label>
+                                    <select class="form-select" id="isReadFilter">
+                                        <option value="">همه</option>
+                                        <option value="false">خوانده نشده</option>
+                                        <option value="true">خوانده شده</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-filter"></i> فیلتر
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="row" id="alertsList">
+                <div class="col-12">
+                    <p class="text-center text-muted">درحال بارگیری هشدارها...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="settingsContent" style="display: none;">
+            <h2>تنظیمات</h2>
+
+            <div class="card mb-3">
+                <div class="card-header">کلیدواژه‌ها</div>
+                <div class="card-body">
+                    <form id="addKeywordForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="keywordText" class="form-label">کلیدواژه</label>
+                                    <input type="text" class="form-control" id="keywordText" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="keywordPriority" class="form-label">اولویت</label>
+                                    <input type="number" class="form-control" id="keywordPriority" min="1" max="10" value="1">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="keywordDescription" class="form-label">توضیحات</label>
+                                    <input type="text" class="form-control" id="keywordDescription">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus"></i> افزودن کلیدواژه
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr>
+
+                    <div class="table-responsive mt-3">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>کلیدواژه</th>
+                                    <th>وضعیت</th>
+                                    <th>اولویت</th>
+                                    <th>توضیحات</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="keywordsList">
+                                <tr>
+                                    <td colspan="5" class="text-center">درحال بارگیری...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">تنظیمات API</div>
+                <div class="card-body">
+                    <form id="apiSettingsForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="dailyBudget" class="form-label">بودجه روزانه API (دلار)</label>
+                                    <input type="number" class="form-control" id="dailyBudget" min="0.1" step="0.1" value="10.0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="claudeModel" class="form-label">مدل Claude</label>
+                                    <select class="form-select" id="claudeModel">
+                                        <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+                                        <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                                        <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> ذخیره تنظیمات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+# زیرساخت اصلی
+fastapi==0.108.0
+uvicorn[standard]==0.25.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.0  # برای پشتیبانی از EmailStr در Pydantic
+python-dotenv==1.0.0
+httpx==0.26.0
+
+# دیتابیس و صف
+sqlalchemy==2.0.23
+asyncpg==0.29.0
+redis==5.0.1
+alembic==1.13.0  # برای مدیریت مهاجرت دیتابیس
+
+# احراز هویت و امنیت
+pyjwt==2.8.0
+passlib==1.7.4
+bcrypt==4.1.2
+python-multipart==0.0.6
+
+# تحلیل داده
+numpy==1.26.2
+pandas==2.1.4
+
+# ابزارهای کمکی
+python-dateutil==2.8.2
+typing-extensions==4.8.0
+loguru==0.7.2
+tenacity==8.2.3
+
+# تست
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.26.0  # قبلاً تعریف شده، تکراری است
+
+# توسعه (اختیاری، با -e نصب کنید)
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
