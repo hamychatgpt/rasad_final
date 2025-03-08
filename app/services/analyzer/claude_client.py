@@ -515,7 +515,7 @@ class ClaudeClient:
             "trigger_event": "رویداد محرک (اگر وجود دارد)",
             "prediction": "پیش‌بینی روند آینده",
             "recommendations": ["توصیه1", "توصیه2", ...],
-            "sentiment_distribution": {{\"positive\": 0.x, \"negative\": 0.y, \"neutral\": 0.z}},
+            "sentiment_distribution": {{"positive": 0.x, "negative": 0.y, "neutral": 0.z}},
             "analysis_confidence": (عددی بین 0 تا 1)
         }}
         """
