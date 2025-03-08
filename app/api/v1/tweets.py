@@ -429,3 +429,120 @@ async def delete_keyword(
     await db.commit()
 
     return {"message": "کلیدواژه با موفقیت غیرفعال شد"}
+
+
+from app.services.processor.content_filter import ContentFilter
+
+# اضافه کردن این اندپوینت به فایل app/api/v1/tweets.py
+
+@router.post("/keywords/extract", response_model=List[str])
+async def extract_keywords_from_text(
+    request: Dict[str, str],
+    db: AsyncSession = Depends(get_db),
+    current_user: AppUser = Depends(get_current_user)
+):
+    """
+    استخراج خودکار کلیدواژه‌ها از متن.
+    
+    Args:
+        request (Dict[str, str]): متن برای استخراج کلیدواژه‌ها
+        db (AsyncSession): نشست دیتابیس
+        current_user (AppUser): کاربر فعلی
+    
+    Returns:
+        List[str]: لیست کلیدواژه‌های استخراج شده
+    """
+    text = request.get("text", "")
+    max_keywords = int(request.get("max_keywords", 10))
+    
+    if not text:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="متن برای استخراج کلیدواژه ارائه نشده است",
+        )
+    
+    # استفاده از ContentFilter برای استخراج کلیدواژه‌ها
+    content_filter = ContentFilter()
+    keywords = content_filter.extract_keywords(text, max_keywords=max_keywords)
+    
+    return keywords
+
+
+@router.get("/keywords/stats", response_model=List[Dict[str, Any]])
+async def get_keywords_stats(
+    days: int = 7,
+    db: AsyncSession = Depends(get_db),
+    current_user: AppUser = Depends(get_current_user)
+):
+    """
+    دریافت آمار استفاده از کلیدواژه‌ها.
+    
+    Args:
+        days (int): تعداد روزهای اخیر
+        db (AsyncSession): نشست دیتابیس
+        current_user (AppUser): کاربر فعلی
+    
+    Returns:
+        List[Dict[str, Any]]: آمار کلیدواژه‌ها
+    """
+    # محاسبه تاریخ شروع
+    start_date = datetime.now() - timedelta(days=days)
+    
+    # استخراج تعداد توییت‌ها برای هر کلیدواژه
+    stmt = select(
+        Keyword.id,
+        Keyword.text,
+        func.count(TweetKeyword.tweet_id).label("tweet_count")
+    ).outerjoin(
+        TweetKeyword, Keyword.id == TweetKeyword.keyword_id
+    ).outerjoin(
+        Tweet, Tweet.id == TweetKeyword.tweet_id
+    ).where(
+        and_(
+            Keyword.is_active == True,
+            or_(
+                Tweet.created_at >= start_date,
+                Tweet.created_at == None
+            )
+        )
+    ).group_by(
+        Keyword.id, Keyword.text
+    ).order_by(
+        func.count(TweetKeyword.tweet_id).desc()
+    )
+    
+    result = await db.execute(stmt)
+    keywords_stats = []
+    
+    for row in result.fetchall():
+        keyword_id, keyword_text, tweet_count = row
+        
+        # استخراج آمار احساسات برای هر کلیدواژه
+        sentiment_stmt = select(
+            Tweet.sentiment_label,
+            func.count().label("count")
+        ).join(
+            TweetKeyword, Tweet.id == TweetKeyword.tweet_id
+        ).where(
+            and_(
+                TweetKeyword.keyword_id == keyword_id,
+                Tweet.created_at >= start_date,
+                Tweet.sentiment_label != None
+            )
+        ).group_by(
+            Tweet.sentiment_label
+        )
+        
+        sentiment_result = await db.execute(sentiment_stmt)
+        sentiment_stats = {
+            row[0]: row[1] for row in sentiment_result.fetchall()
+        }
+        
+        keywords_stats.append({
+            "id": keyword_id,
+            "text": keyword_text,
+            "tweet_count": tweet_count,
+            "sentiment_stats": sentiment_stats
+        })
+    
+    return keywords_stats
