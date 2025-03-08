@@ -1,41 +1,46 @@
 # زیرساخت اصلی
-fastapi==0.108.0
-uvicorn[standard]==0.25.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
-email-validator==2.1.0  # برای پشتیبانی از EmailStr در Pydantic
-python-dotenv==1.0.0
-httpx==0.26.0
+fastapi==0.108.0                # فریم‌ورک API اصلی
+uvicorn[standard]==0.25.0       # سرور ASGI برای اجرای FastAPI
+pydantic==2.5.3                 # اعتبارسنجی داده و مدیریت تنظیمات
+pydantic-settings==2.1.0        # مدیریت تنظیمات برای Pydantic 2.x
+email-validator==2.1.0          # پشتیبانی از EmailStr در Pydantic
+python-dotenv==1.0.0            # بارگذاری متغیرهای محیطی
+httpx==0.26.0                   # کلاینت HTTP/HTTPS مدرن با پشتیبانی غیرهمزمان
 
 # دیتابیس و صف
-sqlalchemy==2.0.23
-asyncpg==0.29.0
-redis==5.0.1
-alembic==1.13.0  # برای مدیریت مهاجرت دیتابیس
+sqlalchemy==2.0.23              # ORM برای ارتباط با دیتابیس
+asyncpg==0.29.0                 # درایور PostgreSQL غیرهمزمان
+redis==5.0.1                    # کلاینت Redis 
+alembic==1.13.0                 # مدیریت مهاجرت دیتابیس
+
+# بهبود عملکرد
+uvloop==0.19.0                  # لوپ رویداد سریعتر برای asyncio
+orjson==3.9.10                  # پردازش JSON با سرعت بالاتر
 
 # احراز هویت و امنیت
-pyjwt==2.8.0
-passlib==1.7.4
-bcrypt==4.1.2
-python-multipart==0.0.6
+pyjwt==2.8.0                    # کار با توکن‌های JWT
+passlib==1.7.4                  # هش‌کردن و بررسی رمزهای عبور
+bcrypt==4.1.2                   # الگوریتم هش برای رمزهای عبور
+python-multipart==0.0.6         # پردازش فرم‌های multipart
+python-jose[cryptography]==3.3.0 # امنیت پیشرفته JWT
 
 # تحلیل داده
-numpy==1.26.2
-pandas==2.1.4
+numpy==1.26.2                   # پردازش آرایه‌های عددی
+pandas==2.1.4                   # تحلیل و دستکاری داده
 
 # ابزارهای کمکی
-python-dateutil==2.8.2
-typing-extensions==4.8.0
-loguru==0.7.2
-tenacity==8.2.3
+python-dateutil==2.8.2          # کار با تاریخ و زمان
+typing-extensions==4.9.0        # ویژگی‌های پیشرفته type hints
+loguru==0.7.2                   # لاگینگ پیشرفته و ساده
+tenacity==8.2.3                 # تکرار عملیات با منطق رترای
 
 # تست
-pytest==7.4.3
-pytest-asyncio==0.21.1
-httpx==0.26.0  # قبلاً تعریف شده، تکراری است
+pytest==7.4.3                   # فریم‌ورک تست
+pytest-asyncio==0.23.2          # پشتیبانی از تست‌های غیرهمزمان
+coverage==7.3.2                 # بررسی پوشش کد
 
 # توسعه (اختیاری، با -e نصب کنید)
-black==23.11.0
-isort==5.12.0
-flake8==6.1.0
-mypy==1.7.1
+black==23.11.0                  # فرمت‌دهنده خودکار کد
+isort==5.12.0                   # مرتب‌سازی ایمپورت‌ها
+flake8==6.1.0                   # بررسی کیفیت کد
+mypy==1.7.1                     # بررسی ایستای نوع‌ها
