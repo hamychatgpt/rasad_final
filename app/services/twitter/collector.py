@@ -15,8 +15,8 @@ from sqlalchemy.future import select
 from sqlalchemy import insert, update, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from app.twitter.client import TwitterAPIClient
-from app.twitter.models import Tweet as TweetModel, TwitterUser
+from app.services.twitter.client import TwitterAPIClient
+from app.services.twitter.models import Tweet as TweetModel, TwitterUser
 from app.db.models import Tweet, User, Keyword, TweetKeyword
 from app.services.redis_service import RedisService
 
