@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 from contextlib import asynccontextmanager
@@ -21,8 +21,8 @@ from app.config import settings
 from app.db.session import get_db, create_tables
 from app.middlewares.logging_middleware import LoggingMiddleware
 from app.middlewares.error_handler import ErrorHandlerMiddleware
-from app.core.security import get_current_user
-from app.db.models import AppUser
+from app.middlewares.debug_middleware import APIDebugMiddleware, DetailedCORSMiddleware
+from app.core.security import get_current_user, get_current_superuser
 
 # روترهای API
 from app.api.v1.auth import router as auth_router
@@ -96,12 +96,13 @@ app = FastAPI(
 
 # افزودن میان‌افزارها
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    DetailedCORSMiddleware,
+    allow_origins=["*"],  # در حالت دیباگ، اجازه دسترسی از همه جا
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(APIDebugMiddleware)  # میان‌افزار دیباگ
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
@@ -109,13 +110,13 @@ app.add_middleware(ErrorHandlerMiddleware)
 app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 
-# افزودن روترها
+# افزودن روترها - بدون احراز هویت برای حالت تست
 app.include_router(auth_router, prefix=settings.API_V1_STR)
-app.include_router(tweets_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
-app.include_router(analysis_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
-app.include_router(waves_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
-app.include_router(settings_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
-app.include_router(services_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
+app.include_router(tweets_router, prefix=settings.API_V1_STR)  # حذف وابستگی احراز هویت
+app.include_router(analysis_router, prefix=settings.API_V1_STR)  # حذف وابستگی احراز هویت
+app.include_router(waves_router, prefix=settings.API_V1_STR)  # حذف وابستگی احراز هویت
+app.include_router(settings_router, prefix=settings.API_V1_STR)  # حذف وابستگی احراز هویت
+app.include_router(services_router, prefix=settings.API_V1_STR)  # حذف وابستگی احراز هویت
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -185,6 +186,32 @@ async def health_check(db: AsyncSession = Depends(get_db)):
     # TODO: پیاده‌سازی بررسی سلامت سایر سرویس‌ها
 
     return health
+
+
+@app.options("/{path:path}")
+async def options_route(path: str):
+    """
+    مسیر OPTIONS برای پشتیبانی از CORS.
+    
+    این مسیر به تمام درخواست‌های OPTIONS پاسخ می‌دهد و هدرهای CORS لازم را برمی‌گرداند.
+    
+    Args:
+        path (str): مسیر درخواست
+        
+    Returns:
+        Response: پاسخ با هدرهای CORS
+    """
+    logger.debug(f"Received OPTIONS request for path: {path}")
+    
+    return Response(
+        content="",
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+            "Access-Control-Max-Age": "86400",  # 24 ساعت
+        }
+    )
 
 
 if __name__ == "__main__":

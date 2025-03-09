@@ -4,6 +4,9 @@
 این ماژول اندپوینت‌های مربوط به جستجو و مدیریت توییت‌ها را فراهم می‌کند.
 """
 
+import logging
+logger = logging.getLogger(__name__)
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -228,6 +231,32 @@ async def get_tweet(
     )
 
 
+"""
+اندپوینت‌های توییت‌ها.
+
+این ماژول اندپوینت‌های مربوط به جستجو و مدیریت توییت‌ها را فراهم می‌کند.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import and_, or_, desc, func
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
+
+from app.db.session import get_db
+from app.db.models import Tweet, User, Keyword, TweetKeyword
+from app.schemas.tweet import TweetResponse, TweetFilterParams, KeywordCreate, KeywordResponse
+from app.core.security import get_current_user
+from app.db.models import AppUser
+from app.services.processor.content_filter import ContentFilter
+
+router = APIRouter(prefix="/tweets", tags=["tweets"])
+
+# تغییرات نیاز نیست در کل فایل اعمال شود. فقط توابع مورد نظر را با توابع جدید جایگزین می‌کنیم
+
 @router.get("/keywords", response_model=List[KeywordResponse])
 async def get_keywords(
         skip: int = 0,
@@ -249,32 +278,130 @@ async def get_keywords(
     Returns:
         List[KeywordResponse]: لیست کلیدواژه‌ها
     """
-    # ایجاد query پایه
-    query = select(Keyword)
+    try:
+        # ایجاد query پایه
+        query = select(Keyword)
 
-    # فیلتر براساس وضعیت فعال
-    if active_only:
-        query = query.where(Keyword.is_active == True)
+        # فیلتر براساس وضعیت فعال
+        if active_only:
+            query = query.where(Keyword.is_active == True)
 
-    # صفحه‌بندی و مرتب‌سازی
-    query = query.order_by(Keyword.priority.desc()).offset(skip).limit(limit)
+        # صفحه‌بندی و مرتب‌سازی
+        query = query.order_by(Keyword.priority.desc()).offset(skip).limit(limit)
 
-    # اجرای query
-    result = await db.execute(query)
-    keywords = result.scalars().all()
+        # اجرای query
+        result = await db.execute(query)
+        keywords = result.scalars().all()
 
-    return [
-        KeywordResponse(
-            id=keyword.id,
-            text=keyword.text,
-            is_active=keyword.is_active,
-            priority=keyword.priority,
-            description=keyword.description,
-            created_at=keyword.created_at
+        # لاگ برای دیباگ
+        logger.info(f"Found {len(keywords)} keywords in database")
+
+        # تبدیل به فرمت پاسخ
+        response_data = [
+            {
+                "id": keyword.id,
+                "text": keyword.text,
+                "is_active": keyword.is_active,
+                "priority": keyword.priority,
+                "description": keyword.description,
+                "created_at": keyword.created_at
+            }
+            for keyword in keywords
+        ]
+        
+        # برگرداندن پاسخ دستی با هدرهای CORS صریح
+        return JSONResponse(
+            content=jsonable_encoder(response_data),
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            }
         )
-        for keyword in keywords
-    ]
 
+    except Exception as e:
+        # لاگ خطا برای دیباگ
+        logger.exception(f"Error getting keywords: {str(e)}")
+        
+        # برگرداندن پاسخ خطا با هدرهای CORS صریح
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"خطا در دریافت کلیدواژه‌ها: {str(e)}"},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            }
+        )
+
+@router.get("/debug/keywords", response_model=Dict[str, Any])
+async def debug_keywords(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    اندپوینت دیباگ برای بررسی وضعیت کلیدواژه‌ها.
+    
+    این اندپوینت اطلاعات دیباگ مختلف را برای تشخیص مشکل در API کلیدواژه‌ها برمی‌گرداند.
+    
+    Args:
+        db (AsyncSession): نشست دیتابیس
+    
+    Returns:
+        Dict[str, Any]: اطلاعات دیباگ
+    """
+    response = {
+        "status": "ok",
+        "timestamp": datetime.utcnow().isoformat(),
+        "tables": {},
+        "keywords": [],
+        "errors": []
+    }
+    
+    try:
+        # بررسی وجود جدول keywords
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.bind)
+            tables = inspector.get_table_names()
+            response["tables"]["all_tables"] = tables
+            response["tables"]["keywords_exists"] = "keywords" in tables
+        except Exception as e:
+            response["errors"].append(f"Error checking tables: {str(e)}")
+        
+        # بررسی تعداد رکوردها در جدول keywords
+        try:
+            stmt = select(func.count()).select_from(Keyword)
+            result = await db.execute(stmt)
+            count = result.scalar() or 0
+            response["tables"]["keywords_count"] = count
+        except Exception as e:
+            response["errors"].append(f"Error counting keywords: {str(e)}")
+        
+        # دریافت کلیدواژه‌ها
+        try:
+            stmt = select(Keyword).order_by(Keyword.priority.desc())
+            result = await db.execute(stmt)
+            keywords = result.scalars().all()
+            
+            response["keywords"] = [
+                {
+                    "id": keyword.id,
+                    "text": keyword.text,
+                    "is_active": keyword.is_active,
+                    "priority": keyword.priority,
+                    "description": keyword.description,
+                    "created_at": keyword.created_at.isoformat() if keyword.created_at else None
+                }
+                for keyword in keywords
+            ]
+        except Exception as e:
+            response["errors"].append(f"Error fetching keywords: {str(e)}")
+    
+    except Exception as e:
+        response["status"] = "error"
+        response["errors"].append(f"Unexpected error: {str(e)}")
+    
+    return response
 
 @router.post("/keywords", response_model=KeywordResponse)
 async def create_keyword(
