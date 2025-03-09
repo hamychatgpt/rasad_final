@@ -18,8 +18,16 @@ class Api {
 
     async request(endpoint, options = {}) {
         // اطمینان از اینکه آدرس درست است (با یا بدون / شروع شود)
-        const url = endpoint.startsWith('http') ? endpoint : 
-                    (endpoint.startsWith('/') ? endpoint : `/${endpoint}`);
+        // مسیرها باید با /api/v1 شروع شوند، مگر اینکه کامل باشند
+        let url;
+        if (endpoint.startsWith('http')) {
+            url = endpoint;
+        } else if (endpoint.startsWith('/api/v1')) {
+            url = endpoint;
+        } else {
+            // اضافه کردن پیشوند /api/v1 به مسیر
+            url = `/api/v1${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+        }
         
         // اضافه کردن هدر احراز هویت
         const headers = {
@@ -60,7 +68,7 @@ class Api {
             
             return await response.json();
         } catch (error) {
-            console.error(`API Error (${endpoint}):`, error);
+            console.error(`API Error (${url}):`, error);
             throw error;
         }
     }

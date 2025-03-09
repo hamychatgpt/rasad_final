@@ -360,45 +360,6 @@ async function startService(serviceName) {
 }
 
 /**
- * توقف یک سرویس
- * @param {string} serviceName نام سرویس
- * @returns {Promise<void>}
- */
-async function stopService(serviceName) {
-    try {
-        // نمایش وضعیت در حال بارگذاری
-        const statusElement = document.getElementById(`${serviceName}Status`);
-        if (statusElement) {
-            statusElement.innerHTML = `<div class="spinner-border spinner-border-sm text-primary" role="status">
-                <span class="visually-hidden">در حال توقف...</span>
-            </div>`;
-        }
-
-        // غیرفعال کردن دکمه‌ها برای جلوگیری از کلیک‌های متعدد
-        updateServiceButtons(serviceName, true);
-        
-        // ارسال درخواست توقف سرویس
-        await api.post(`/services/${serviceName}/stop`, {});
-        
-        // بروزرسانی وضعیت سرویس‌ها
-        await loadServices();
-        
-        // نمایش پیام موفقیت
-        showSuccessMessage(`سرویس ${getServiceDisplayName(serviceName)} با موفقیت متوقف شد`);
-        
-    } catch (error) {
-        console.error(`Error stopping service ${serviceName}:`, error);
-        showErrorMessage(`خطا در توقف سرویس ${getServiceDisplayName(serviceName)}: ${error.message}`);
-        
-        // بروزرسانی مجدد وضعیت سرویس‌ها
-        await loadServices();
-    } finally {
-        // فعال کردن دکمه‌ها
-        updateServiceButtons(serviceName, false);
-    }
-}
-
-/**
  * فعال/غیرفعال کردن دکمه‌های سرویس
  * @param {string} serviceName نام سرویس
  * @param {boolean} disabled آیا دکمه‌ها غیرفعال شوند
@@ -628,3 +589,42 @@ window.loadServices = loadServices;
 window.startService = startService;
 window.stopService = stopService;
 window.setupServiceListeners = setupServiceListeners;
+
+/**
+ * توقف یک سرویس
+ * @param {string} serviceName نام سرویس
+ * @returns {Promise<void>}
+ */
+async function stopService(serviceName) {
+    try {
+        // نمایش وضعیت در حال بارگذاری
+        const statusElement = document.getElementById(`${serviceName}Status`);
+        if (statusElement) {
+            statusElement.innerHTML = `<div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">در حال توقف...</span>
+            </div>`;
+        }
+
+        // غیرفعال کردن دکمه‌ها برای جلوگیری از کلیک‌های متعدد
+        updateServiceButtons(serviceName, true);
+        
+        // ارسال درخواست توقف سرویس
+        await api.post(`/services/${serviceName}/stop`, {});
+        
+        // بروزرسانی وضعیت سرویس‌ها
+        await loadServices();
+        
+        // نمایش پیام موفقیت
+        showSuccessMessage(`سرویس ${getServiceDisplayName(serviceName)} با موفقیت متوقف شد`);
+        
+    } catch (error) {
+        console.error(`Error stopping service ${serviceName}:`, error);
+        showErrorMessage(`خطا در توقف سرویس ${getServiceDisplayName(serviceName)}: ${error.message}`);
+        
+        // بروزرسانی مجدد وضعیت سرویس‌ها
+        await loadServices();
+    } finally {
+        // فعال کردن دکمه‌ها
+        updateServiceButtons(serviceName, false);
+    }
+}

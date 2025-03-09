@@ -22,7 +22,20 @@ async function updateActiveKeywords() {
         const keywords = await loadKeywords(true);
         
         if (keywords.length === 0) {
-            activeKeywordsElement.innerHTML = '<p class="text-center text-muted">کلیدواژه فعالی یافت نشد</p>';
+            activeKeywordsElement.innerHTML = `
+                <div class="alert alert-info">
+                    <p class="mb-0">هنوز کلیدواژه‌ای تعریف نشده است. می‌توانید از بخش تنظیمات، کلیدواژه‌های مورد نظر خود را اضافه کنید.</p>
+                </div>
+                <a href="#" class="btn btn-primary btn-sm" id="goToSettings">
+                    <i class="bi bi-gear"></i> رفتن به تنظیمات کلیدواژه‌ها
+                </a>
+            `;
+            
+            // افزودن عملکرد به دکمه
+            document.getElementById('goToSettings')?.addEventListener('click', () => {
+                showPage('settings');
+            });
+            
             return;
         }
         

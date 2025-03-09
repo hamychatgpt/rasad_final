@@ -259,6 +259,8 @@ async def main():
     # بررسی وجود کاربر مدیر
     admin_result = await check_admin_user()
     
+
+    
     # تست API‌های خارجی (اختیاری)
     api_results = await test_external_apis()
     

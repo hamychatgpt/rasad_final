@@ -36,7 +36,7 @@ async function checkAuthStatus() {
     }
 
     try {
-        const userData = await api.get('/api/v1/auth/me');
+        const userData = await api.get('/auth/me');
         
         // نمایش اطلاعات کاربر در منو
         const userDisplayName = document.getElementById('userDisplayName');
