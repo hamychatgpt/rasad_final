@@ -4,11 +4,14 @@
 این ماژول اندپوینت‌های مربوط به مدیریت سرویس‌های سیستم را فراهم می‌کند.
 """
 
+# اضافه کردن import os در بالای فایل
 import os
+import sys
 import psutil
 import platform
 import asyncio
 import socket
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, List, Any, Optional
@@ -19,6 +22,11 @@ from app.db.models import AppUser
 from app.core.security import get_current_user, get_current_superuser
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
+# تعیین مسیر اصلی پروژه
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 router = APIRouter(prefix="/services", tags=["services"])
 
 # متغیرهای جهانی برای نگهداری وضعیت فرآیندها
@@ -28,14 +36,19 @@ service_processes = {
     "analyzer": None
 }
 
-# مسیرهای اسکریپت‌های سرویس‌ها
+# مسیرهای اسکریپت‌های سرویس‌ها با مسیر مطلق
 service_scripts = {
-    "collector": "scripts/run_collector.py",
-    "processor": "scripts/run_processor.py",
-    "analyzer": "scripts/run_analyzer.py",
-    "all": "scripts/run_all.py"
+    "collector": os.path.join(BASE_DIR, "scripts", "run_collector.py"),
+    "processor": os.path.join(BASE_DIR, "scripts", "run_processor.py"),
+    "analyzer": os.path.join(BASE_DIR, "scripts", "run_analyzer.py"),
+    "all": os.path.join(BASE_DIR, "scripts", "run_all.py")
 }
 
+# ایجاد پوشه logs اگر وجود ندارد
+logs_dir = os.path.join(BASE_DIR, "logs")
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+    
 
 async def get_service_status(service_name: str) -> Dict[str, Any]:
     """
@@ -162,12 +175,27 @@ async def start_service_task(service_name: str):
     # شروع فرآیند جدید
     script_path = service_scripts[service_name]
     
+    # بررسی وجود فایل اسکریپت
+    if not os.path.exists(script_path):
+        logger.error(f"اسکریپت {script_path} وجود ندارد")
+        raise Exception(f"اسکریپت {service_name} یافت نشد")
+    
+    # اطمینان از وجود پوشه logs
+    logs_dir = os.path.join(BASE_DIR, "logs")
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
+        
+    # مسیر فایل‌های لاگ
+    output_log = os.path.join(logs_dir, f"{service_name}_output.log")
+    error_log = os.path.join(logs_dir, f"{service_name}_error.log")
+    
     try:
-        # شروع فرآیند به صورت subprocess
+        # شروع فرآیند با استفاده از مسیرهای مطلق
+        python_executable = sys.executable  # استفاده از همان اجراکننده پایتون
         process = psutil.Popen(
-            ["python", script_path],
-            stdout=open(f"logs/{service_name}_output.log", "a"),
-            stderr=open(f"logs/{service_name}_error.log", "a"),
+            [python_executable, script_path],
+            stdout=open(output_log, "a"),
+            stderr=open(error_log, "a"),
             start_new_session=True
         )
         
@@ -180,8 +208,9 @@ async def start_service_task(service_name: str):
             raise Exception(f"فرآیند {service_name} خیلی زود متوقف شد")
             
     except Exception as e:
+        logger.error(f"خطا در شروع سرویس {service_name}: {str(e)}")
         raise Exception(f"خطا در شروع سرویس {service_name}: {str(e)}")
-
+    
 
 @router.post("/{service_name}/start", response_model=Dict[str, Any])
 async def start_service(
