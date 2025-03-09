@@ -17,7 +17,8 @@ from sqlalchemy import update, delete, func
 
 from app.db.models import Tweet, User, Keyword, TweetKeyword
 from app.services.redis_service import RedisService
-from app.filters.content_filter import ContentFilter
+# اصلاح مسیر واردسازی ContentFilter
+from app.services.processor.content_filter import ContentFilter
 
 logger = logging.getLogger(__name__)
 
