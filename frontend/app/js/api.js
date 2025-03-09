@@ -1,7 +1,5 @@
 // api.js - مدیریت ارتباط با API
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-
 // کلاس مدیریت API
 class Api {
     constructor() {
@@ -19,7 +17,9 @@ class Api {
     }
 
     async request(endpoint, options = {}) {
-        const url = `${API_BASE_URL}${endpoint}`;
+        // اطمینان از اینکه آدرس درست است (با یا بدون / شروع شود)
+        const url = endpoint.startsWith('http') ? endpoint : 
+                    (endpoint.startsWith('/') ? endpoint : `/${endpoint}`);
         
         // اضافه کردن هدر احراز هویت
         const headers = {
@@ -51,6 +51,11 @@ class Api {
                 });
                 
                 throw new Error(errorData.detail || 'خطای ناشناخته');
+            }
+            
+            // اگر پاسخ خالی است، آبجکت خالی برگردانیم
+            if (response.status === 204) {
+                return {};
             }
             
             return await response.json();
@@ -88,3 +93,6 @@ class Api {
 
 // ایجاد یک نمونه جهانی
 const api = new Api();
+
+// صادرات نمونه API به صورت عمومی
+window.api = api;

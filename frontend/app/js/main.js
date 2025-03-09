@@ -1,11 +1,11 @@
 // main.js - نقطه ورود اصلی برنامه
 
-// تنظیم وضعیت اولیه
-let currentPage = 'dashboard';
+// متغیر جهانی برای صفحه فعلی
+window.currentPage = 'dashboard';
 
 // نمایش صفحه مورد نظر
 function showPage(page) {
-    currentPage = page;
+    window.currentPage = page;
 
     // پنهان کردن همه صفحات
     document.getElementById('dashboardContent').style.display = 'none';
@@ -30,16 +30,15 @@ function showPage(page) {
     } else if (page === 'tweets') {
         document.getElementById('tweetsContent').style.display = 'block';
         document.getElementById('tweetsLink').classList.add('active');
-        // loadTweets();
+        loadTweets();
     } else if (page === 'alerts') {
         document.getElementById('alertsContent').style.display = 'block';
         document.getElementById('alertsLink').classList.add('active');
-        // loadAlerts();
+        loadAlerts();
     } else if (page === 'settings') {
         document.getElementById('settingsContent').style.display = 'block';
         document.getElementById('settingsLink').classList.add('active');
         loadAndDisplayKeywords();
-        // loadSettings();
     } else if (page === 'services') {
         document.getElementById('servicesContent').style.display = 'block';
         document.getElementById('servicesLink').classList.add('active');
@@ -47,8 +46,8 @@ function showPage(page) {
     }
 }
 
-// نمایش پیام خطا
-function showErrorMessage(message) {
+// تابع عمومی برای نمایش پیام خطا
+window.showErrorMessage = function(message) {
     // ایجاد المان توست
     const toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
@@ -83,10 +82,10 @@ function showErrorMessage(message) {
     toastElement.addEventListener('hidden.bs.toast', function () {
         this.remove();
     });
-}
+};
 
-// نمایش پیام موفقیت
-function showSuccessMessage(message) {
+// تابع عمومی برای نمایش پیام موفقیت
+window.showSuccessMessage = function(message) {
     // مشابه showErrorMessage اما با کلاس bg-success
     const toastContainer = document.getElementById('toastContainer');
     if (!toastContainer) {
@@ -118,7 +117,7 @@ function showSuccessMessage(message) {
     toastElement.addEventListener('hidden.bs.toast', function () {
         this.remove();
     });
-}
+};
 
 // راه‌اندازی برنامه
 document.addEventListener('DOMContentLoaded', () => {
@@ -129,11 +128,28 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('settingsLink').addEventListener('click', () => showPage('settings'));
     document.getElementById('servicesLink').addEventListener('click', () => showPage('services'));
     
+    // نمایش منوی کاربر به عنوان دکمه خروج وقتی کاربر وارد شده است
+    document.getElementById('userInfoLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // اگر کاربر وارد شده است، خروج انجام شود
+        if (api.token) {
+            if (confirm('آیا می‌خواهید از سیستم خارج شوید؟')) {
+                logout();
+            }
+        } else {
+            // اگر کاربر وارد نشده است، صفحه ورود نمایش داده شود
+            showPage('login');
+        }
+    });
+    
     // گوش‌دهنده‌های رویداد برای تمام ماژول‌ها
-    setupAuthListeners();
-    setupDashboardListeners();
-    setupServiceListeners();
-    setupKeywordListeners();
+    if (typeof setupAuthListeners === 'function') setupAuthListeners();
+    if (typeof setupDashboardListeners === 'function') setupDashboardListeners();
+    if (typeof setupServiceListeners === 'function') setupServiceListeners();
+    if (typeof setupKeywordListeners === 'function') setupKeywordListeners();
+    if (typeof setupTweetsListeners === 'function') setupTweetsListeners();
+    if (typeof setupAlertsListeners === 'function') setupAlertsListeners();
     
     // ایجاد کانتینر توست
     if (!document.getElementById('toastContainer')) {
@@ -144,9 +160,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // بررسی وضعیت احراز هویت
-    checkAuthStatus().then(authenticated => {
-        if (authenticated) {
-            showPage('dashboard');
-        }
-    });
+    checkAuthStatus()
+        .then(authenticated => {
+            if (authenticated) {
+                showPage('dashboard');
+            } else {
+                showPage('login');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking auth status:', error);
+            showPage('login');
+        });
 });
+
+// صادرات توابع عمومی
+window.showPage = showPage;

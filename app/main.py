@@ -6,14 +6,16 @@
 """
 
 import logging
-from fastapi import FastAPI, Depends, HTTPException
+from pathlib import Path
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 import os
 from contextlib import asynccontextmanager
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
 
 from app.config import settings
 from app.db.session import get_db, create_tables
@@ -29,7 +31,6 @@ from app.api.v1.analysis import router as analysis_router
 from app.api.v1.waves import router as waves_router
 from app.api.v1.settings import router as settings_router
 from app.api.v1.services import router as services_router
-from app.api.v1.router import router as api_router
 
 from sqlalchemy import select, text
 
@@ -39,6 +40,14 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger("app")
+
+# تعیین مسیر فایل‌های استاتیک
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR / "frontend" / "app"
+TEMPLATES_DIR = FRONTEND_DIR
+
+# تنظیم Jinja2 برای صفحات HTML
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 
 @asynccontextmanager
@@ -81,8 +90,8 @@ app = FastAPI(
     description="سیستم رصد - پلتفرم هوشمند برای پایش، تحلیل و گزارش‌دهی فعالیت‌های توییتر",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/api/docs" if settings.DEBUG else None,  # تغییر مسیر داکس به /api/docs
-    redoc_url="/api/redoc" if settings.DEBUG else None,  # تغییر مسیر redoc به /api/redoc
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
 )
 
 # افزودن میان‌افزارها
@@ -96,67 +105,94 @@ app.add_middleware(
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
-# تعیین مسیر پوشه فرانت‌اند
-frontend_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend")
-logger.info(f"Frontend directory: {frontend_dir}")
+# نصب فایل‌های استاتیک
+app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 
-# اضافه کردن مسیر استاتیک برای فایل‌های CSS و JS
-app.mount("/static", StaticFiles(directory=os.path.join(frontend_dir, "app")), name="static")
-app.mount("/js", StaticFiles(directory=os.path.join(frontend_dir, "app", "js")), name="js")
-app.mount("/css", StaticFiles(directory=os.path.join(frontend_dir, "app", "css")), name="css")
+# افزودن روترها
+app.include_router(auth_router, prefix=settings.API_V1_STR)
+app.include_router(tweets_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
+app.include_router(analysis_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
+app.include_router(waves_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
+app.include_router(settings_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
+app.include_router(services_router, prefix=settings.API_V1_STR, dependencies=[Depends(get_current_user)])
 
-# افزودن روتر اصلی API با پیشوند /api
-app.include_router(
-    api_router,
-    prefix="/api"
-)
 
-# اندپوینت اصلی API برای سازگاری با نسخه‌های قبلی
-@app.get("/api", response_class=JSONResponse)
-async def api_root():
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    """
+    صفحه اصلی داشبورد.
+    
+    این مسیر فایل HTML اصلی داشبورد را برمی‌گرداند.
+    
+    Args:
+        request (Request): درخواست HTTP
+    
+    Returns:
+        HTMLResponse: صفحه HTML داشبورد
+    """
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/api")
+async def root():
+    """
+    مسیر ریشه API.
+
+    این مسیر برای بررسی در دسترس بودن برنامه استفاده می‌شود.
+
+    Returns:
+        Dict: پیام خوش‌آمدگویی و وضعیت برنامه
+    """
     return {
-        "message": "به API سیستم رصد خوش آمدید",
+        "message": f"به API سیستم رصد خوش آمدید",
         "version": "1.0.0",
         "status": "online"
     }
 
-# تعریف مسیر ریشه برای سرو فایل index.html
-@app.get("/", response_class=FileResponse, include_in_schema=False)
-async def serve_frontend():
-    index_path = os.path.join(frontend_dir, "app", "index.html")
-    if os.path.exists(index_path):
-        logger.info(f"Serving frontend index from: {index_path}")
-        return FileResponse(index_path)
-    else:
-        logger.error(f"Frontend file not found at: {index_path}")
-        # اگر فایل وجود نداشت، پیام خطا نمایش می‌دهیم
-        return JSONResponse(
-            status_code=404,
-            content={
-                "message": "فایل‌های فرانت‌اند یافت نشد",
-                "error": f"فایل index.html در مسیر {index_path} وجود ندارد",
-                "help": "لطفاً مطمئن شوید که پوشه frontend/app در مسیر صحیح قرار دارد"
-            }
-        )
 
-# تعریف مسیر برای هر درخواست دیگر که با /api شروع نمی‌شود
-@app.get("/{path:path}", response_class=FileResponse, include_in_schema=False)
-async def serve_frontend_paths(path: str):
-    # اگر مسیر با api شروع شود، آن را رد می‌کنیم
-    if path.startswith("api"):
-        raise HTTPException(status_code=404, detail="Not Found")
-    
-    # بررسی وجود فایل استاتیک
-    static_file = os.path.join(frontend_dir, "app", path)
-    if os.path.exists(static_file) and not os.path.isdir(static_file):
-        logger.debug(f"Serving static file: {static_file}")
-        return FileResponse(static_file)
-    
-    # در غیر این صورت index.html را برمی‌گردانیم (برای SPA)
-    index_path = os.path.join(frontend_dir, "app", "index.html")
-    if os.path.exists(index_path):
-        logger.debug(f"Serving frontend index for path: {path}")
-        return FileResponse(index_path)
-    else:
-        logger.error(f"Frontend file not found at: {index_path}")
-        raise HTTPException(status_code=404, detail="Frontend files not found")
+@app.get("/health")
+async def health_check(db: AsyncSession = Depends(get_db)):
+    """
+    بررسی سلامت برنامه.
+
+    این مسیر برای بررسی سلامت برنامه و اتصالات آن استفاده می‌شود.
+
+    Args:
+        db (AsyncSession): نشست دیتابیس
+
+    Returns:
+        Dict: وضعیت سلامت برنامه و اتصالات آن
+    """
+    health = {
+        "status": "healthy",
+        "database": "connected",
+        "twitter_api": "unknown",
+        "claude_api": "unknown",
+        "redis": "unknown"
+    }
+
+    # بررسی اتصال دیتابیس
+    try:
+        # بررسی ساده اتصال دیتابیس
+        await db.execute(select(text("1")))
+    except Exception as e:
+        health["database"] = "disconnected"
+        health["status"] = "unhealthy"
+        logger.error(f"Database health check failed: {e}")
+
+    # بررسی سایر سرویس‌ها
+    # TODO: پیاده‌سازی بررسی سلامت سایر سرویس‌ها
+
+    return health
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    host = os.getenv("HOST", "127.0.0.1")
+    port = int(os.getenv("PORT", 8000))
+    log_level = "info" if not settings.DEBUG else "debug"
+
+    logger.info(f"Running application in {'debug' if settings.DEBUG else 'production'} mode")
+    uvicorn.run("app.main:app", host=host, port=port, log_level=log_level, reload=settings.DEBUG)
