@@ -1,0 +1,74 @@
+# ساختار پروژه FastAPI
+
+```
+.env
+.env.example
+README.md
+directory_structure.md
+rasad_final.code-workspace
+requirements.txt
+venv-setup.sh
+frontend/
+    app/
+        js/
+            alerts.js
+            api.js
+            auth.js
+            dashboard.js
+            keywords.js
+            main.js
+            services.js
+            tweets.js
+        app.js
+        index.html
+    styles.css
+app/
+    api/
+        v1/
+            analysis.py
+            auth.py
+            router.py
+            services.py
+            settings.py
+            tweets.py
+            waves.py
+    core/
+        security.py
+    db/
+        models.py
+        session.py
+    middlewares/
+        error_handler.py
+        logging_middleware.py
+    schemas/
+        analysis.py
+        auth.py
+        settings.py
+        tweet.py
+        wave.py
+    services/
+        analyzer/
+            analyzer.py
+            claude_client.py
+            cost_manager.py
+            wave_detector.py
+        processor/
+            content_filter.py
+            tweet_processor.py
+        twitter/
+            client.py
+            collector.py
+            models.py
+        redis_service.py
+    config.py
+    main.py
+scripts/
+    create_admin.py
+    dependency-check.py
+    quick-setup-script.py
+    run_all.py
+    run_analyzer.py
+    run_collector.py
+    run_processor.py
+    test_connections.py
+```
