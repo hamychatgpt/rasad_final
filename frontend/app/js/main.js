@@ -7,7 +7,8 @@ let appState = {
     currentPage: 'dashboard', // صفحه فعلی
     isAuthenticated: false,   // وضعیت احراز هویت
     isLoading: false,         // آیا در حال بارگذاری است
-    userData: null            // اطلاعات کاربر
+    userData: null,           // اطلاعات کاربر
+    isDevelopment: true       // آیا در حالت توسعه هستیم؟
 };
 
 // مدیریت توست‌ها (نمایش پیغام‌ها)
@@ -151,6 +152,10 @@ function showPage(page) {
         document.getElementById('settingsContent').style.display = 'block';
         document.getElementById('settingsLink').classList.add('active');
         if (typeof loadAndDisplayKeywords === 'function') loadAndDisplayKeywords();
+        // اگر در حالت توسعه هستیم، پنل دیباگ را نمایش می‌دهیم
+        if (appState.isDevelopment && typeof setupDebug === 'function') {
+            setupDebug();
+        }
     } else if (page === 'services') {
         document.getElementById('servicesContent').style.display = 'block';
         document.getElementById('servicesLink').classList.add('active');
@@ -226,7 +231,15 @@ function setupMainListeners() {
         // اگر کاربر وارد شده است، خروج انجام شود
         if (appState.isAuthenticated) {
             if (confirm('آیا می‌خواهید از سیستم خارج شوید؟')) {
-                logout();
+                if (typeof logout === 'function') {
+                    logout();
+                } else {
+                    // اگر تابع logout تعریف نشده، عملکرد پیش‌فرض را اجرا می‌کنیم
+                    localStorage.removeItem('authToken');
+                    appState.isAuthenticated = false;
+                    showPage('login');
+                    toastManager.showInfo('خروج از سیستم انجام شد');
+                }
             }
         } else {
             // اگر کاربر وارد نشده است، صفحه ورود نمایش داده شود
@@ -243,6 +256,148 @@ function setupMainListeners() {
             console.error('Error saving state before unload:', e);
         }
     });
+
+    // اضافه کردن دکمه دیباگ در حالت توسعه
+    if (appState.isDevelopment) {
+        addDevModeFeatures();
+    }
+}
+
+/**
+ * اضافه کردن ویژگی‌های حالت توسعه
+ */
+function addDevModeFeatures() {
+    // افزودن دکمه توکن موقت
+    const navbarNav = document.querySelector('#navbarNav .navbar-nav.ms-auto');
+    if (navbarNav) {
+        const devItem = document.createElement('li');
+        devItem.className = 'nav-item';
+        devItem.innerHTML = `
+            <a class="nav-link" href="#" id="devModeLink">
+                <span class="badge bg-warning">حالت توسعه</span>
+            </a>
+        `;
+        navbarNav.appendChild(devItem);
+        
+        // افزودن گوش‌دهنده به دکمه
+        document.getElementById('devModeLink').addEventListener('click', () => {
+            // نمایش منوی کشویی ابزارهای توسعه
+            showDevTools();
+        });
+    }
+}
+
+/**
+ * نمایش ابزارهای توسعه
+ */
+function showDevTools() {
+    // بررسی وجود منوی ابزارهای توسعه
+    let devToolsMenu = document.getElementById('devToolsMenu');
+    
+    if (devToolsMenu) {
+        // اگر قبلاً ایجاد شده، آن را نمایش/مخفی می‌کنیم
+        devToolsMenu.style.display = devToolsMenu.style.display === 'none' ? 'block' : 'none';
+        return;
+    }
+    
+    // ایجاد منوی ابزارهای توسعه
+    devToolsMenu = document.createElement('div');
+    devToolsMenu.id = 'devToolsMenu';
+    devToolsMenu.className = 'card position-absolute';
+    devToolsMenu.style.top = '50px';
+    devToolsMenu.style.right = '10px';
+    devToolsMenu.style.zIndex = '1000';
+    devToolsMenu.style.minWidth = '250px';
+    
+    devToolsMenu.innerHTML = `
+        <div class="card-header bg-warning">
+            <h5 class="mb-0">ابزارهای توسعه</h5>
+        </div>
+        <div class="card-body">
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary btn-sm" id="devGenerateToken">
+                    <i class="bi bi-key"></i> تولید توکن موقت
+                </button>
+                <button class="btn btn-outline-info btn-sm" id="devDebugPanel">
+                    <i class="bi bi-bug"></i> پنل دیباگ
+                </button>
+                <button class="btn btn-outline-danger btn-sm" id="devClearStorage">
+                    <i class="bi bi-trash"></i> پاک کردن ذخیره‌سازی
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // افزودن به بدنه
+    document.body.appendChild(devToolsMenu);
+    
+    // افزودن گوش‌دهنده‌ها
+    document.getElementById('devGenerateToken').addEventListener('click', () => {
+        const token = "dev-token-" + Date.now();
+        if (typeof api !== 'undefined' && api.setToken) {
+            api.setToken(token);
+            toastManager.showSuccess(`توکن موقت ایجاد شد: ${token}`);
+        } else {
+            localStorage.setItem('authToken', token);
+            toastManager.showSuccess(`توکن موقت ایجاد شد: ${token} (API در دسترس نیست)`);
+        }
+    });
+    
+    document.getElementById('devDebugPanel').addEventListener('click', () => {
+        showPage('settings');
+        // اطمینان از وجود پنل دیباگ
+        if (typeof setupDebug === 'function') {
+            setupDebug();
+        } else {
+            toastManager.showInfo('ماژول دیباگ در دسترس نیست');
+        }
+        // اسکرول به پنل دیباگ
+        const debugPanel = document.getElementById('debugPanel');
+        if (debugPanel) {
+            debugPanel.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+    
+    document.getElementById('devClearStorage').addEventListener('click', () => {
+        if (confirm('آیا از پاک کردن تمام ذخیره‌سازی محلی اطمینان دارید؟')) {
+            localStorage.clear();
+            toastManager.showSuccess('ذخیره‌سازی محلی پاک شد');
+        }
+    });
+    
+    // بستن منو با کلیک خارج از آن
+    document.addEventListener('click', function(event) {
+        if (devToolsMenu && !devToolsMenu.contains(event.target) && 
+            event.target.id !== 'devModeLink' && !event.target.closest('#devModeLink')) {
+            devToolsMenu.style.display = 'none';
+        }
+    });
+}
+
+/**
+ * بررسی وضعیت احراز هویت داخلی
+ * @returns {boolean} آیا کاربر احراز هویت شده است
+ */
+function internalCheckAuthStatus() {
+    // در حالت توسعه، همیشه احراز هویت شده فرض می‌شود
+    if (appState.isDevelopment) {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            localStorage.setItem('authToken', 'dev-mode-token');
+        }
+        
+        // تنظیم نام کاربر در منو
+        const userDisplayName = document.getElementById('userDisplayName');
+        if (userDisplayName) {
+            userDisplayName.textContent = 'کاربر توسعه';
+        }
+        
+        return true;
+    }
+    
+    // بررسی وجود توکن
+    const token = localStorage.getItem('authToken');
+    return !!token;
 }
 
 /**
@@ -260,16 +415,36 @@ async function initializeApp() {
         setupMainListeners();
         
         // بررسی وضعیت احراز هویت
-        const authenticated = await checkAuthStatus();
+        let authenticated = false;
+        
+        // تلاش برای استفاده از تابع checkAuthStatus از ماژول auth.js
+        if (typeof window.checkAuthStatus === 'function') {
+            try {
+                authenticated = await window.checkAuthStatus();
+            } catch (authError) {
+                console.error('Error using external checkAuthStatus:', authError);
+                // استفاده از بررسی داخلی به عنوان پشتیبان
+                authenticated = internalCheckAuthStatus();
+            }
+        } else {
+            // اگر تابع خارجی موجود نیست، از بررسی داخلی استفاده می‌کنیم
+            console.warn('External checkAuthStatus function not found, using internal check');
+            authenticated = internalCheckAuthStatus();
+        }
+        
         appState.isAuthenticated = authenticated;
         
-        // راه‌اندازی سایر ماژول‌ها
+        // بارگذاری اسکریپت‌های اضافی
+        await loadExtraScripts();
+        
+        // راه‌اندازی سایر ماژول‌ها با بررسی وجود توابع
         if (typeof setupAuthListeners === 'function') setupAuthListeners();
         if (typeof setupDashboardListeners === 'function') setupDashboardListeners();
         if (typeof setupServiceListeners === 'function') setupServiceListeners();
         if (typeof setupKeywordListeners === 'function') setupKeywordListeners();
         if (typeof setupTweetsListeners === 'function') setupTweetsListeners();
         if (typeof setupAlertsListeners === 'function') setupAlertsListeners();
+        if (appState.isDevelopment && typeof setupDebug === 'function') setupDebug();
         
         // نمایش صفحه مناسب
         if (authenticated) {
@@ -286,16 +461,90 @@ async function initializeApp() {
                 showPage('dashboard');
             }
         } else {
-            showPage('login');
+            // در حالت توسعه، به جای صفحه ورود، داشبورد را نمایش می‌دهیم
+            if (appState.isDevelopment) {
+                // ایجاد توکن موقت
+                if (typeof api !== 'undefined' && api.setToken) {
+                    api.setToken("dev-mode-token");
+                } else {
+                    localStorage.setItem('authToken', 'dev-mode-token');
+                }
+                appState.isAuthenticated = true;
+                showPage('dashboard');
+                toastManager.showInfo('حالت توسعه فعال است. احراز هویت غیرفعال شده است.');
+            } else {
+                showPage('login');
+            }
         }
     } catch (error) {
         console.error('Error initializing app:', error);
         toastManager.showError('خطا در راه‌اندازی برنامه: ' + error.message);
-        showPage('login');
+        
+        // در صورت خطا، در حالت توسعه به داشبورد و در غیر این صورت به صفحه ورود منتقل می‌شویم
+        if (appState.isDevelopment) {
+            appState.isAuthenticated = true;
+            showPage('dashboard');
+        } else {
+            showPage('login');
+        }
     } finally {
         // پایان وضعیت بارگذاری
         setLoadingState(false);
     }
+}
+
+/**
+ * بارگذاری اسکریپت‌های اضافی مورد نیاز
+ */
+async function loadExtraScripts() {
+    try {
+        // بارگذاری اسکریپت دیباگ در حالت توسعه
+        if (appState.isDevelopment && typeof window.loadDebugStatus === 'undefined') {
+            try {
+                await loadScript('/js/debug.js');
+                console.log('Debug module loaded successfully');
+            } catch (debugError) {
+                console.warn('Error loading debug module:', debugError);
+            }
+        }
+        
+        // بررسی وجود API و بارگذاری آن در صورت نیاز
+        if (typeof window.api === 'undefined') {
+            try {
+                await loadScript('/js/api.js');
+                console.log('API module loaded successfully');
+            } catch (apiError) {
+                console.warn('Error loading API module:', apiError);
+            }
+        }
+        
+        // بررسی وجود ماژول احراز هویت و بارگذاری آن در صورت نیاز
+        if (typeof window.login === 'undefined' || typeof window.checkAuthStatus === 'undefined') {
+            try {
+                await loadScript('/js/auth.js');
+                console.log('Auth module loaded successfully');
+            } catch (authError) {
+                console.warn('Error loading auth module:', authError);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading extra scripts:', error);
+    }
+}
+
+/**
+ * بارگذاری دینامیک اسکریپت
+ * @param {string} src - آدرس اسکریپت
+ * @returns {Promise} Promise که پس از بارگذاری اسکریپت حل می‌شود
+ */
+function loadScript(src) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`خطا در بارگذاری اسکریپت: ${src}`));
+        document.head.appendChild(script);
+    });
 }
 
 // راه‌اندازی برنامه بعد از بارگذاری کامل DOM
