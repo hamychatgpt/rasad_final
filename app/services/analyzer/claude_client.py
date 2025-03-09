@@ -293,249 +293,249 @@ class ClaudeClient:
                 "keywords": []
             }
     
-async def analyze_batch(
-        self,
-        texts: List[str],
-        analysis_type: str = "sentiment",
-        language: str = "auto"
-) -> List[Dict[str, Any]]:
-    """
-    تحلیل دسته‌ای متون
-    Args:
-        texts (List[str]): لیست متون برای تحلیل
-        analysis_type (str): نوع تحلیل ('sentiment', 'topics', 'full')
-        language (str): زبان متون ('fa', 'en', یا 'auto')
-    Returns:
-        List[Dict[str, Any]]: نتایج تحلیل
-    """
-    system_prompt = """
-    تو یک سیستم تحلیل متن هوشمند هستی. وظیفه تو تحلیل دسته‌ای متون فارسی و انگلیسی است.
-    پاسخ را فقط به صورت JSON بازگردان و دقت کن که برای هر متن، یک آیتم در آرایه نتایج وجود داشته باشد.
-    """
-    # تنظیم پیام بر اساس نوع تحلیل و زبان
-    language_hint = ""
-    if language == "fa":
-        language_hint = "این متون به زبان فارسی هستند."
-    elif language == "en":
-        language_hint = "این متون به زبان انگلیسی هستند."
-    analysis_request = ""
-    if analysis_type == "sentiment":
-        analysis_request = "تحلیل احساسات (sentiment)"
-    elif analysis_type == "topics":
-        analysis_request = "استخراج موضوعات (topics)"
-    elif analysis_type == "full":
-        analysis_request = "تحلیل کامل (sentiment + topics)"
-    # ساخت متن دسته‌ای
-    batch_text = ""
-    for i, text in enumerate(texts):
-        batch_text += f"متن {i + 1}: {text}\n\n"
-    
-    # ساخت JSON ساختار نمونه برای استفاده در پیام کاربر
-    json_structure = """
-    {
-        "results": [
-            {
-                "index": 0,
-    """
-    
-    # تکمیل ساختار JSON براساس نوع تحلیل
-    if analysis_type == "sentiment" or analysis_type == "full":
-        json_structure += """
-                "sentiment": {
-                    "sentiment": "positive/negative/neutral/mixed",
-                    "score": (عددی بین -1 تا 1),
-                    "confidence": (عددی بین 0 تا 1)
-                },
+    async def analyze_batch(
+            self,
+            texts: List[str],
+            analysis_type: str = "sentiment",
+            language: str = "auto"
+    ) -> List[Dict[str, Any]]:
         """
-    
-    if analysis_type == "topics" or analysis_type == "full":
-        json_structure += """
-                "topics": {
-                    "main_topic": "موضوع اصلی",
-                    "keywords": ["کلیدواژه1", "کلیدواژه2", ...]
-                },
+        تحلیل دسته‌ای متون
+        Args:
+            texts (List[str]): لیست متون برای تحلیل
+            analysis_type (str): نوع تحلیل ('sentiment', 'topics', 'full')
+            language (str): زبان متون ('fa', 'en', یا 'auto')
+        Returns:
+            List[Dict[str, Any]]: نتایج تحلیل
         """
-    
-    json_structure += """
-            },
-            ...
+        system_prompt = """
+        تو یک سیستم تحلیل متن هوشمند هستی. وظیفه تو تحلیل دسته‌ای متون فارسی و انگلیسی است.
+        پاسخ را فقط به صورت JSON بازگردان و دقت کن که برای هر متن، یک آیتم در آرایه نتایج وجود داشته باشد.
+        """
+        # تنظیم پیام بر اساس نوع تحلیل و زبان
+        language_hint = ""
+        if language == "fa":
+            language_hint = "این متون به زبان فارسی هستند."
+        elif language == "en":
+            language_hint = "این متون به زبان انگلیسی هستند."
+        analysis_request = ""
+        if analysis_type == "sentiment":
+            analysis_request = "تحلیل احساسات (sentiment)"
+        elif analysis_type == "topics":
+            analysis_request = "استخراج موضوعات (topics)"
+        elif analysis_type == "full":
+            analysis_request = "تحلیل کامل (sentiment + topics)"
+        # ساخت متن دسته‌ای
+        batch_text = ""
+        for i, text in enumerate(texts):
+            batch_text += f"متن {i + 1}: {text}\n\n"
+        
+        # ساخت JSON ساختار نمونه برای استفاده در پیام کاربر
+        json_structure = """
+        {
+            "results": [
+                {
+                    "index": 0,
+        """
+        
+        # تکمیل ساختار JSON براساس نوع تحلیل
+        if analysis_type == "sentiment" or analysis_type == "full":
+            json_structure += """
+                    "sentiment": {
+                        "sentiment": "positive/negative/neutral/mixed",
+                        "score": (عددی بین -1 تا 1),
+                        "confidence": (عددی بین 0 تا 1)
+                    },
+            """
+        
+        if analysis_type == "topics" or analysis_type == "full":
+            json_structure += """
+                    "topics": {
+                        "main_topic": "موضوع اصلی",
+                        "keywords": ["کلیدواژه1", "کلیدواژه2", ...]
+                    },
+            """
+        
+        json_structure += """
+                },
+                ...
+            ]
+        }
+        """
+        
+        # ساخت پیام کاربر
+        user_message = f"""
+        لطفاً تحلیل {analysis_request} را برای متون زیر انجام بده. {language_hint}
+        {batch_text}
+        لطفاً پاسخ را فقط به صورت JSON با ساختار زیر بازگردان:
+        {json_structure}
+        """
+        
+        messages = [
+            {"role": "user", "content": user_message}
         ]
-    }
-    """
-    
-    # ساخت پیام کاربر
-    user_message = f"""
-    لطفاً تحلیل {analysis_request} را برای متون زیر انجام بده. {language_hint}
-    {batch_text}
-    لطفاً پاسخ را فقط به صورت JSON با ساختار زیر بازگردان:
-    {json_structure}
-    """
-    
-    messages = [
-        {"role": "user", "content": user_message}
-    ]
-    
-    # برای دسته‌های بزرگ، مدل قوی‌تر و توکن‌های بیشتری نیاز است
-    model = self.model if len(texts) <= 10 else "claude-3-7-sonnet-20250219"
-    max_tokens = 4096 if len(texts) <= 10 else 8192
-    
-    response = await self.send_message(
-        messages=messages,
-        system=system_prompt,
-        model=model,
-        max_tokens=max_tokens,
-        temperature=0.3
-    )
-    
-    # استخراج پاسخ JSON
-    try:
-        # یافتن اولین بلاک متنی در پاسخ
-        text_content = next((item["text"] for item in response.content if item["type"] == "text"), None)
-        if not text_content:
-            raise ValueError("پاسخ معتبری از Claude دریافت نشد")
         
-        # تلاش برای پارس JSON از پاسخ
-        json_str = text_content.strip()
-        start_idx = json_str.find("{")
-        end_idx = json_str.rfind("}") + 1
-        if start_idx != -1 and end_idx != 0:
-            json_str = json_str[start_idx:end_idx]
+        # برای دسته‌های بزرگ، مدل قوی‌تر و توکن‌های بیشتری نیاز است
+        model = self.model if len(texts) <= 10 else "claude-3-7-sonnet-20250219"
+        max_tokens = 4096 if len(texts) <= 10 else 8192
         
-        result = json.loads(json_str)
-        return result.get("results", [])
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.error(f"Error parsing batch analysis response: {e}")
-        return [{"index": i, "error": "خطا در پردازش پاسخ"} for i in range(len(texts))]
+        response = await self.send_message(
+            messages=messages,
+            system=system_prompt,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=0.3
+        )
+        
+        # استخراج پاسخ JSON
+        try:
+            # یافتن اولین بلاک متنی در پاسخ
+            text_content = next((item["text"] for item in response.content if item["type"] == "text"), None)
+            if not text_content:
+                raise ValueError("پاسخ معتبری از Claude دریافت نشد")
+            
+            # تلاش برای پارس JSON از پاسخ
+            json_str = text_content.strip()
+            start_idx = json_str.find("{")
+            end_idx = json_str.rfind("}") + 1
+            if start_idx != -1 and end_idx != 0:
+                json_str = json_str[start_idx:end_idx]
+            
+            result = json.loads(json_str)
+            return result.get("results", [])
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Error parsing batch analysis response: {e}")
+            return [{"index": i, "error": "خطا در پردازش پاسخ"} for i in range(len(texts))]
 
-async def analyze_wave(
-        self,
-        tweets: List[Dict[str, Any]],
-        keywords: List[str] = None,
-        use_extended_thinking: bool = True
-) -> Dict[str, Any]:
-    """
-    تحلیل عمیق یک موج توییتری
-    Args:
-        tweets (List[Dict[str, Any]]): لیست توییت‌ها
-        keywords (List[str]): کلیدواژه‌های مرتبط با موج
-        use_extended_thinking (bool): استفاده از Extended Thinking برای تحلیل عمیق‌تر
-    Returns:
-        Dict[str, Any]: نتایج تحلیل موج
-    """
-    system_prompt = """
-    تو یک سیستم تحلیل موج شبکه‌های اجتماعی هستی. وظیفه تو تحلیل عمیق موج‌های توییتری در فضای مجازی است.
-    سعی کن الگوهای توییت‌ها، منشا احتمالی موج، میزان تأثیرگذاری و روند پیش‌بینی شده را به دقت تحلیل کنی.
-    پاسخ را به صورت JSON با ساختار مشخص شده بازگردان.
-    """
-    # خلاصه‌سازی توییت‌ها برای استفاده در پرامپت
-    tweet_summaries = []
-    for i, tweet in enumerate(tweets[:20]):  # حداکثر 20 توییت برای جلوگیری از طولانی شدن پرامپت
-        tweet_text = tweet.get("content", "")
-        username = tweet.get("user", {}).get("username", "کاربر ناشناس")
-        engagement = tweet.get("retweet_count", 0) + tweet.get("like_count", 0)
-        tweet_summary = f"توییت {i + 1}: @{username} - لایک/ریتوییت: {engagement} - {tweet_text[:100]}..."
-        tweet_summaries.append(tweet_summary)
-    
-    tweets_count = len(tweets)
-    keywords_text = ", ".join(keywords) if keywords else "نامشخص"
-    
-    # ساخت JSON ساختار نمونه برای استفاده در پیام کاربر
-    json_structure = """
-    {
-        "main_topic": "موضوع اصلی موج",
-        "summary": "خلاصه‌ای از ماهیت موج",
-        "is_coordinated": true/false,
-        "coordination_confidence": (عددی بین 0 تا 1),
-        "importance_score": (عددی بین 0 تا 10),
-        "key_influencers": ["کاربر1", "کاربر2", ...],
-        "reactionary": true/false,
-        "trigger_event": "رویداد محرک (اگر وجود دارد)",
-        "prediction": "پیش‌بینی روند آینده",
-        "recommendations": ["توصیه1", "توصیه2", ...],
-        "sentiment_distribution": {"positive": 0.x, "negative": 0.y, "neutral": 0.z},
-        "analysis_confidence": (عددی بین 0 تا 1)
-    }
-    """
-    
-    # ساخت پیام کاربر
-    tweet_summaries_text = "\n".join(tweet_summaries)
-    user_message = f"""
-    لطفاً موج توییتری زیر را تحلیل کن:
-    تعداد کل توییت‌ها: {tweets_count}
-    کلیدواژه‌های مرتبط: {keywords_text}
-    نمونه توییت‌ها:
-    {tweet_summaries_text}
-    
-    موارد زیر را تحلیل کن:
-    1. موضوع اصلی این موج چیست؟
-    2. آیا این موج طبیعی به نظر می‌رسد یا احتمالاً هماهنگ شده است؟
-    3. میزان اهمیت و تأثیرگذاری این موج چقدر است؟
-    4. چه کاربرانی بیشترین تأثیر را در این موج داشته‌اند؟
-    5. آیا این موج واکنشی به یک رویداد خاص است؟
-    6. پیش‌بینی روند آینده این موج چیست؟
-    
-    لطفاً پاسخ را فقط به صورت JSON با ساختار زیر بازگردان:
-    {json_structure}
-    """
-    
-    messages = [
-        {"role": "user", "content": user_message}
-    ]
-    
-    # استفاده از مدل قوی‌تر و Extended Thinking
-    model = "claude-3-7-sonnet-20250219"  # استفاده از بهترین مدل برای تحلیل موج
-    
-    # تنظیم درخواست با Extended Thinking در صورت نیاز
-    request_params = {
-        "messages": messages,
-        "system": system_prompt,
-        "model": model,
-        "max_tokens": 4096,
-        "temperature": 0.2  # دمای پایین برای نتایج قطعی‌تر
-    }
-    
-    # اضافه کردن هدر Extended Thinking
-    if use_extended_thinking:
-        self.headers["anthropic-beta"] = "thinking-2025-04-15"
-        request_params["thinking"] = {
-            "type": "enabled",
-            "budget_tokens": 6000
+    async def analyze_wave(
+            self,
+            tweets: List[Dict[str, Any]],
+            keywords: List[str] = None,
+            use_extended_thinking: bool = True
+    ) -> Dict[str, Any]:
+        """
+        تحلیل عمیق یک موج توییتری
+        Args:
+            tweets (List[Dict[str, Any]]): لیست توییت‌ها
+            keywords (List[str]): کلیدواژه‌های مرتبط با موج
+            use_extended_thinking (bool): استفاده از Extended Thinking برای تحلیل عمیق‌تر
+        Returns:
+            Dict[str, Any]: نتایج تحلیل موج
+        """
+        system_prompt = """
+        تو یک سیستم تحلیل موج شبکه‌های اجتماعی هستی. وظیفه تو تحلیل عمیق موج‌های توییتری در فضای مجازی است.
+        سعی کن الگوهای توییت‌ها، منشا احتمالی موج، میزان تأثیرگذاری و روند پیش‌بینی شده را به دقت تحلیل کنی.
+        پاسخ را به صورت JSON با ساختار مشخص شده بازگردان.
+        """
+        # خلاصه‌سازی توییت‌ها برای استفاده در پرامپت
+        tweet_summaries = []
+        for i, tweet in enumerate(tweets[:20]):  # حداکثر 20 توییت برای جلوگیری از طولانی شدن پرامپت
+            tweet_text = tweet.get("content", "")
+            username = tweet.get("user", {}).get("username", "کاربر ناشناس")
+            engagement = tweet.get("retweet_count", 0) + tweet.get("like_count", 0)
+            tweet_summary = f"توییت {i + 1}: @{username} - لایک/ریتوییت: {engagement} - {tweet_text[:100]}..."
+            tweet_summaries.append(tweet_summary)
+        
+        tweets_count = len(tweets)
+        keywords_text = ", ".join(keywords) if keywords else "نامشخص"
+        
+        # ساخت JSON ساختار نمونه برای استفاده در پیام کاربر
+        json_structure = """
+        {
+            "main_topic": "موضوع اصلی موج",
+            "summary": "خلاصه‌ای از ماهیت موج",
+            "is_coordinated": true/false,
+            "coordination_confidence": (عددی بین 0 تا 1),
+            "importance_score": (عددی بین 0 تا 10),
+            "key_influencers": ["کاربر1", "کاربر2", ...],
+            "reactionary": true/false,
+            "trigger_event": "رویداد محرک (اگر وجود دارد)",
+            "prediction": "پیش‌بینی روند آینده",
+            "recommendations": ["توصیه1", "توصیه2", ...],
+            "sentiment_distribution": {"positive": 0.x, "negative": 0.y, "neutral": 0.z},
+            "analysis_confidence": (عددی بین 0 تا 1)
         }
-    
-    response = await self.send_message(**request_params)
-    
-    # حذف هدر Extended Thinking برای درخواست‌های بعدی
-    if use_extended_thinking and "anthropic-beta" in self.headers:
-        del self.headers["anthropic-beta"]
-    
-    # استخراج پاسخ JSON
-    try:
-        # یافتن اولین بلاک متنی در پاسخ
-        text_content = next((item["text"] for item in response.content if item["type"] == "text"), None)
-        if not text_content:
-            raise ValueError("پاسخ معتبری از Claude دریافت نشد")
+        """
         
-        # تلاش برای پارس JSON از پاسخ
-        json_str = text_content.strip()
-        start_idx = json_str.find("{")
-        end_idx = json_str.rfind("}") + 1
-        if start_idx != -1 and end_idx != 0:
-            json_str = json_str[start_idx:end_idx]
+        # ساخت پیام کاربر
+        tweet_summaries_text = "\n".join(tweet_summaries)
+        user_message = f"""
+        لطفاً موج توییتری زیر را تحلیل کن:
+        تعداد کل توییت‌ها: {tweets_count}
+        کلیدواژه‌های مرتبط: {keywords_text}
+        نمونه توییت‌ها:
+        {tweet_summaries_text}
         
-        result = json.loads(json_str)
+        موارد زیر را تحلیل کن:
+        1. موضوع اصلی این موج چیست؟
+        2. آیا این موج طبیعی به نظر می‌رسد یا احتمالاً هماهنگ شده است؟
+        3. میزان اهمیت و تأثیرگذاری این موج چقدر است؟
+        4. چه کاربرانی بیشترین تأثیر را در این موج داشته‌اند؟
+        5. آیا این موج واکنشی به یک رویداد خاص است؟
+        6. پیش‌بینی روند آینده این موج چیست؟
         
-        # استخراج محتوای Extended Thinking اگر موجود بود
-        thinking_content = next((item["thinking"] for item in response.content if item.get("type") == "thinking"),
+        لطفاً پاسخ را فقط به صورت JSON با ساختار زیر بازگردان:
+        {json_structure}
+        """
+        
+        messages = [
+            {"role": "user", "content": user_message}
+        ]
+        
+        # استفاده از مدل قوی‌تر و Extended Thinking
+        model = "claude-3-7-sonnet-20250219"  # استفاده از بهترین مدل برای تحلیل موج
+        
+        # تنظیم درخواست با Extended Thinking در صورت نیاز
+        request_params = {
+            "messages": messages,
+            "system": system_prompt,
+            "model": model,
+            "max_tokens": 4096,
+            "temperature": 0.2  # دمای پایین برای نتایج قطعی‌تر
+        }
+        
+        # اضافه کردن هدر Extended Thinking
+        if use_extended_thinking:
+            self.headers["anthropic-beta"] = "thinking-2025-04-15"
+            request_params["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": 6000
+            }
+        
+        response = await self.send_message(**request_params)
+        
+        # حذف هدر Extended Thinking برای درخواست‌های بعدی
+        if use_extended_thinking and "anthropic-beta" in self.headers:
+            del self.headers["anthropic-beta"]
+        
+        # استخراج پاسخ JSON
+        try:
+            # یافتن اولین بلاک متنی در پاسخ
+            text_content = next((item["text"] for item in response.content if item["type"] == "text"), None)
+            if not text_content:
+                raise ValueError("پاسخ معتبری از Claude دریافت نشد")
+            
+            # تلاش برای پارس JSON از پاسخ
+            json_str = text_content.strip()
+            start_idx = json_str.find("{")
+            end_idx = json_str.rfind("}") + 1
+            if start_idx != -1 and end_idx != 0:
+                json_str = json_str[start_idx:end_idx]
+            
+            result = json.loads(json_str)
+            
+            # استخراج محتوای Extended Thinking اگر موجود بود
+            thinking_content = next((item["thinking"] for item in response.content if item.get("type") == "thinking"),
                             None)
-        if thinking_content:
-            result["extended_thinking"] = thinking_content
-        
-        return result
-    except (json.JSONDecodeError, ValueError) as e:
-        logger.error(f"Error parsing wave analysis response: {e}")
-        return {
-            "main_topic": "خطا در تحلیل موج",
-            "summary": "خطا در پردازش پاسخ",
-            "error": str(e),
-            "analysis_confidence": 0
-        }
+            if thinking_content:
+                result["extended_thinking"] = thinking_content
+            
+            return result
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"Error parsing wave analysis response: {e}")
+            return {
+                "main_topic": "خطا در تحلیل موج",
+                "summary": "خطا در پردازش پاسخ",
+                "error": str(e),
+                "analysis_confidence": 0
+            }
